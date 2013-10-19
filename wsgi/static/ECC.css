@@ -1,0 +1,28 @@
+body {
+  background: Cornsilk;
+}
+
+table {
+  border-collapse: collapse;
+  background: Lavender;
+}
+
+table.contents, th.contents, td.contents {
+  border-style: dotted;
+  border-width: 1px;
+  margin: 1px solid;
+}
+
+.right {
+  text-align: right;
+}
+
+.left {
+  text-align: left;
+}
+
+li {
+  border-style: dashed;
+  border-width: 2px;
+}
+
