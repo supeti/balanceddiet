@@ -28,8 +28,11 @@ class Static(object):
 static_objects = {
     'ECC.css': Static('ECC.css', 'text/css'),
     'ECC-16.png': Static('ECC-16.png', 'image/png'),
+    'ECC-60.png': Static('ECC-60.png', 'image/png'),
+    'ECC-512.png': Static('ECC-512.png', 'image/png'),
     'master.html': Static('master.html', 'text/html; charset=UTF-8'),
-    'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8')
+    'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
+    'edit.html': Static('edit.html', 'text/html; charset=UTF-8')
 }
 
 def application(environ, start_response):
@@ -59,6 +62,10 @@ def application(environ, start_response):
         return static.response
     elif path_info[1] == 'mobile':
         static = static_objects['mobile.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'edit':
+        static = static_objects['edit.html']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'static':
