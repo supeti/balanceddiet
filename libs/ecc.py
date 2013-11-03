@@ -126,7 +126,7 @@ def load_records():
             rl.append({'score':record['contents']['score'], 'rid':irid,
                       'title':record['title'], 'user':record['user']})
             if max_rid < irid: max_rid = irid
-    rl.sort(key=lambda d: (-d['score'],d['rid']))
+    rl.sort(key=lambda d: (-float(d['score']), int(d['rid'])))
     for i in rl[100:]:
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
