@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import codecs
 import datetime
 import gzip
 import json
@@ -81,8 +82,8 @@ def dump_feed_entry(e, rid):
           'content': score,
         }
     path = os.path.join(feed_path, rid+'.gz')
-    with gzip.open(path, 'wt') as f:
-        f.write(entry % d)
+    with gzip.open(path, 'wb') as f:
+        f.write((entry % d).encode())
 
 def load_feed():
     entries = []
