@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Extreme Cooking Contest - best plan wins</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="shortcut icon" href="/static/ECC-16.png" type="image/png">
+  <link rel="stylesheet" type="text/css" href="/static/ECC.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="https://apis.google.com/js/client.js?onload=load"></script>
+<script type="text/javascript">
+(function() {
+  var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+  po.src = 'https://plus.google.com/js/client:plusone.js';
+  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+})();
+
+function signinCallback(authResult) {
+  gapi.client.load('plus','v1', function(){
+    if (authResult['access_token']) {
+      $('#login').hide();
+      gapi.client.plus.people.get({'userId' : 'me'}).execute(function(resp) {
+        var text = "<a href='" + resp.url + "'>";
+        if (resp.image.url) {
+          text += "<img src='" + resp.image.url + "'>";
+        }
+        text += resp.displayName + "</a>";
+        $('#cooklink').html(text);
+      });
+      $("#profile").show();
+    } else if (authResult['error']) {
+      alert('Sign-in state: ' + authResult['error']);
+    }
+  });
+}
+
+$(function() {
+  $("#profile").hide();
+  alert(JSON.stringify(localStorage.plan));
+});
+
+</script>
+</head>
+<body>
+
+  <h1>Attention!</h1>
+
+  <p>This site is a work in progress. Some features are present, some are missing, and it may crash at any time. However, you are welcome to test it, and share your thoughts at <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a> or at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
+
+  <h1>Extreme Cooking Contest</h1>
+  <p>Thank you for your contribution!</p>
+  <div id="login">
+    <p>You need to identify yourself to upload data. Choose one of the followin authentication methods:</p> 
+    <span id="signinButton">
+    <span class="g-signin" data-callback="signinCallback" data-cookiepolicy="single_host_origin"
+          data-clientid="944567077117-pt9su8tidc31cgjrhqcglhe6pbskg71q.apps.googleusercontent.com"
+          data-scope="https://www.googleapis.com/auth/plus.login">
+    </span>
+    </span>
+  </div>
+  <div id="profile">
+    <form action="submit_plan" method="post">
+      <input type="hidden" id="plan" name="plan" value="">
+      <input type="hidden" id="lsg" name="lsg" value="">
+      <input type="hidden" id="age" name="age" value="">
+      <input type="hidden" id="weight" name="weight" value="">
+      <dl>
+        <dt>Cook:</dt>
+        <dd id="cooklink"></dd>
+        <dt>Plan</dt>
+        <dd>
+          <dl>
+            <dt>Title:</dt>
+            <dd><input type="text" name="title" value="Anonymous"></dd>
+            <dt>Score:</dt>
+            <dd id="score"></dd>
+            <dt>Items:</dt>
+            <dd id="items"></dd>
+          </dl>
+        </dd>
+      </dl>
+      <input type="submit" value="Submit">
+    </form>
+  </div>
+
+  <script type="text/javascript">
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44113537-1', 'nutrika-supeti.rhcloud.com');
+  ga('send', 'pageview');
+  </script>
+</body>
+</html>
+

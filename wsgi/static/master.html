@@ -7,6 +7,26 @@
     <link rel="stylesheet" type="text/css" href="/static/ECC.css">
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>
+
+var record_title_template = "<h3 class='record'>$score $title</h3>";
+var record_body_template = "<p class='record'><a href='$url'><img src='$image'>$displayName</a></p>";
+var receive_records_list = function(data) {
+  var records = $("#records");
+  records.html("");
+  $.each(data, function(i, item) {
+    var title = record_title_template.replace("$score", item.score).replace("$title", item.title);
+    records.append(title);
+    var user = item.user;
+    var body = record_body_template.replace("$url", user.url).replace("$image", user.image);
+    body = body.replace("$displayName", user.displayName);
+    records.append(body);
+  });
+};
+
+$(function() {
+  $.get("json/list", receive_records_list);
+});
+
 </script>
 </head>
 
@@ -19,10 +39,11 @@
 
   <h1>Extreme Cooking Contest</h1>
   <h2>Top Plans</h2>
-  <ol id="top"></ol>
+  <div id="records"></div>
 
   <h2>Participate</h2>
   <p>Go to the <a href="http://nutrika-supeti.rhcloud.com/">Nutrika</a> site when you are ready to make your own plan.</p>
+  <p>You may handle the data you have submitted at <a href="my_plans">My Plans</a>.</p>
 
   <div class="g-plusone" data-annotation="inline" data-width="300"></div>
   <div class="fb-like" data-href="http://nutrika-supeti.rhcloud.com/" data-width="450" data-layout="standard" data-show-faces="true" data-send="true"></div>

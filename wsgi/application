@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import cgi
+import gzip
+import io
 import json
 import os
 import sys
@@ -10,19 +13,24 @@ if os.getenv("OPENSHIFT_REPO_DIR"):
     repo_dir = os.getenv("OPENSHIFT_REPO_DIR")
     production_environment = True
 else:
-    repo_dir = os.pardir
+    repo_dir = os.path.abspath(os.pardir)
     production_environment = False
 sys.path.append(os.path.join(repo_dir, "libs"))
+
+import ecc
+data_dir = os.path.join(repo_dir, "data")
+if not os.path.isdir(repo_dir): os.makedirs(data_dir)
+ecc.init(data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
 
 class Static(object):
   def __init__(self, path, content_type):
-    f = open(os.path.join(static_dir, path), 'rb')
-    data = f.read()
-    f.close()
+    with open(os.path.join(static_dir, path), 'rb') as f:
+        data = gzip.compress(f.read())
     self.header = [('Content-Type', content_type), 
-                   ('Content-Length', str(len(data)))]
+                   ('Content-Length', str(len(data))),
+                   ('Content-Encoding', 'gzip')]
     self.response = [data]
 
 static_objects = {
@@ -32,26 +40,29 @@ static_objects = {
     'ECC-512.png': Static('ECC-512.png', 'image/png'),
     'master.html': Static('master.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
-    'edit.html': Static('edit.html', 'text/html; charset=UTF-8')
+    'my_plans.html': Static('my_plans.html', 'text/html; charset=UTF-8'),
+    'received.html': Static('received.html', 'text/html; charset=UTF-8'),
+    'admin.html': Static('admin.html', 'text/html; charset=UTF-8')
 }
 
+
+unauthorized_user = ('{ "result":"error", ' + 
+                     '"response":"Authentication of user failed." }')
+unauthorized_client = ('{ "result":"error", ' +
+                       '"response":"Authentication of client failed." }')
+successful_submit = '{ "result":"success" }'
 def application(environ, start_response):
     ctype = 'text/plain; charset=UTF-8'
     path_info = environ['PATH_INFO'].split('/')
-    print('HTTP_ACCEPT_ENCODING' + '=' + environ['HTTP_ACCEPT_ENCODING'])
     if path_info[1] == 'json':
-        length = int(environ['CONTENT_LENGTH'])
-        request = environ['wsgi.input'].read(length).decode()
-        args = json.loads(request)
-        print(args)
-        contents = nutrika.get_contents(path_info[2], args)
-        response_body = json.dumps(contents)
-        #print(response_body)
-        ctype = 'application/json; charset=UTF-8'
-    elif path_info[1] == 'ref':
-        ref = reference_objects[path_info[2]]
-        start_response('200 OK', ref.header)
-        return ref.response
+        if path_info[2] == 'list':
+            start_response('200 OK', ecc.list_header)
+            return ecc.list_response
+        else:
+            print("unkkown json request:"+str(path_info))
+    elif path_info[1] == 'feed':
+        start_response('200 OK', ecc.feed_header)
+        return ecc.feed_response
     elif not path_info[1]:
         print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
         if 'iPad' in environ['HTTP_USER_AGENT']:
@@ -64,10 +75,49 @@ def application(environ, start_response):
         static = static_objects['mobile.html']
         start_response('200 OK', static.header)
         return static.response
-    elif path_info[1] == 'edit':
-        static = static_objects['edit.html']
+    elif path_info[1] == 'my_plans':
+        static = static_objects['my_plans.html']
         start_response('200 OK', static.header)
         return static.response
+    elif path_info[1] == 'admin':
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'backup.tar.xz':
+        data = ecc.backup()
+        print(data)
+        start_response('200 OK', [('Content-type', 'application/x-gtar')])
+        return FileWrapper(open(data, "rb"))
+    elif path_info[1] == 'restore':
+        length = int(environ['CONTENT_LENGTH'])
+        with open('restore.dat', 'wb') as f:
+            f.write(environ['wsgi.input'].read(length))
+        with open('restore.dat', 'r') as f:
+            form = cgi.FieldStorage(fp=f, environ=environ)
+            with open('restore.tar.xz', 'wb') as g:
+                g.write(form['archive'].value)
+        if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
+            ecc.restore('restore.tar.xz')
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'submit':
+        length = int(environ['CONTENT_LENGTH'])
+        request = json.loads(environ['wsgi.input'].read(length).decode())
+        print(environ)
+        if request['password'] == 'b7647ea13a32fef8d9f341f921d6c69e14401133':
+            user = request['user']
+            if user['id'] == ecc.get_gplus_account_id(user['access_token']):
+                del request['password']
+                del user['id']
+                del user['access_token']
+                ecc.add_record(request)
+                response_body = successful_submit
+            else:
+                response_body = unauthorized_user
+        else:
+            response_body = unauthorized_client
+        ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'static':
         static = static_objects[path_info[2]]
         start_response('200 OK', static.header)
@@ -84,14 +134,14 @@ def application(environ, start_response):
     response_headers = [('Content-Type', ctype), 
                         ('Content-Length', str(len(response_body)))]
     start_response(status, response_headers)
-    return [response_body.encode('UTF-8') ]
+    return [ response_body.encode('UTF-8') ]
 
 #
 # Below for testing only
 #
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
-    #httpd = make_server('localhost', 8051, application)
-    httpd = make_server('192.168.1.90', 8051, application)
+    httpd = make_server('localhost', 8052, application)
+    #httpd = make_server('192.168.1.90', 8052, application)
     httpd.serve_forever()
 
