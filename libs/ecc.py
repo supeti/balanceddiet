@@ -93,8 +93,8 @@ def load_feed():
     files.sort(reverse=True)
     while 100 < len(files): os.unlink(files.pop())
     for fn in files:
-        with gzip.open(fn, 'rt') as f:
-            entries.append(f.read())
+        with gzip.open(fn, 'rb') as f:
+            entries.append(f.read().decode())
     os.chdir(cwd)
     d = {}
     d['updated'] = datetime.datetime.now().isoformat()
