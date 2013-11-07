@@ -17,7 +17,7 @@ records = {}
 list_response = []
 max_rid = 0
 
-list_header = [('Content-Type', 'application/json; charset=UTF-8'),
+json_header = [('Content-Type', 'application/json; charset=UTF-8'),
                ('Content-Length', None),
                ('Content-Encoding', 'gzip')]
 feed_header = [('Content-Type', 'application/atom+xml; charset=UTF-8'),
@@ -81,7 +81,7 @@ def dump_feed_entry(e, rid):
           'author_uri': user['url'],
           'content': score,
         }
-    path = os.path.join(feed_path, rid+'.gz')
+    path = os.path.join(feed_path, str(rid) + '.gz')
     with gzip.open(path, 'wb') as f:
         f.write((entry % d).encode())
 
@@ -105,11 +105,13 @@ def load_feed():
     feed_response = [ feed ]
 
 def dump_record(rid, record):
-    path = os.path.join(records_path, rid + '.xz')
+    record['rid'] = rid
+    path = os.path.join(records_path, str(rid) + '.xz')
     with lzma.open(path, 'wb') as f:
         pickle.dump(record, f)
 
 def load_records():
+    global list_header
     global list_response
     global max_rid
     records.clear()
@@ -121,26 +123,28 @@ def load_records():
     for fn in files:
         with lzma.open(fn, 'rb') as f:
             record = pickle.load(f)
-            rid = fn[:-3]
-            records[rid] = gzip.compress(json.dumps(record).encode())
-            irid = int(rid)
-            rl.append({'score':record['contents']['score'], 'rid':irid,
+            rid = record['rid']
+            response = gzip.compress(json.dumps(record).encode())
+            header = json_header.copy()
+            header[1] = ('Content-Length', str(len(response)))
+            records[rid] = (header, [response])
+            rl.append({'score':record['contents']['score'], 'rid':rid,
                       'title':record['title'], 'user':record['user']})
-            if max_rid < irid: max_rid = irid
+            if max_rid < rid: max_rid = rid
     rl.sort(key=lambda d: (-float(d['score']), int(d['rid'])))
     for i in rl[100:]:
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
+    list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
     os.chdir(cwd)
 
 def add_record(d):
     global max_rid
     max_rid += 1
-    rid = '%08d' % max_rid
-    dump_record(rid, d)
+    dump_record(max_rid, d)
     load_records()
-    dump_feed_entry(d, rid)
+    dump_feed_entry(d, max_rid)
     load_feed()
 
 def backup():

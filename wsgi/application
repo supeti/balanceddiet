@@ -58,6 +58,10 @@ def application(environ, start_response):
         if path_info[2] == 'list':
             start_response('200 OK', ecc.list_header)
             return ecc.list_response
+        elif path_info[2] == 'record':
+            header, response = ecc.records[int(path_info[3])]
+            start_response('200 OK', header)
+            return response
         else:
             print("unkkown json request:"+str(path_info))
     elif path_info[1] == 'feed':

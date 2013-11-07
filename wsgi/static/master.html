@@ -8,24 +8,74 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>
 
-var record_title_template = "<h3 class='record'>$score $title</h3>";
-var record_body_template = "<p class='record'><a href='$url'><img src='$image'>$displayName</a></p>";
 var receive_records_list = function(data) {
   var records = $("#records");
   records.html("");
   $.each(data, function(i, item) {
-    var title = record_title_template.replace("$score", item.score).replace("$title", item.title);
+    var title = $("#record_title_template").html().replace("$score", item.score).replace("$title", item.title);
     records.append(title);
     var user = item.user;
-    var body = record_body_template.replace("$url", user.url).replace("$image", user.image);
+    var body = $("#record_body_template").html().replace("$url", user.url).replace("$image", user.image);
     body = body.replace("$displayName", user.displayName);
+    body = body.split("$rid").join(item.rid);
     records.append(body);
+    $("#" + item.rid + ".hide_record_button").hide();
   });
 };
 
 $(function() {
   $.get("json/list", receive_records_list);
 });
+
+var lsg = { 1:"infants", 2:"children", 3:"males", 4:"females", 5:"pregnant females", 6:"lactating females"};
+var records = new Object();
+var receive_record = function(data) {
+  records[data.rid] = data;
+  var product_list = "";
+  $.each(data.plan_input.plan.products, function(i, product) {
+    product_list += "<li>" + product.quantity + "x<ul>";
+    $.each(product.ingredients, function(j, ingredient) {
+      product_list += "<li>" + ingredient.amount + "g " + ingredient.ndbno;
+    });
+    product_list += "</ul>";
+  });
+  var record = $("#plan_header_template").html().replace("$product_list", product_list);
+  p = data.plan_input;
+  record = record.replace("$days", p.plan.days).replace("$weight", p.weight).replace("$age", p.age);
+  record = record.replace("$lsg", lsg[p.lsg]);
+  $("#" + data.rid + ".record_details").html(record);
+  $("#" + data.rid + ".show_record_button").hide();
+  $("#" + data.rid + ".hide_record_button").show();
+  $("#" + data.rid + ".record_details").show();
+};
+
+function show_record(rid) {
+  if (!records[rid]) $.get("json/record/" + rid, receive_record);
+  else {
+    $("#" + rid + ".show_record_button").hide();
+    $("#" + rid + ".hide_record_button").show();
+    $("#" + rid + ".record_details").show();
+  }
+}
+
+function hide_record(rid) {
+  $("#" + rid + ".show_record_button").show();
+  $("#" + rid + ".hide_record_button").hide();
+  $("#" + rid + ".record_details").hide();
+}
+
+function export_plan(rid) {
+  var d = new Date();
+  ds = d.toISOString().split("T")[0] + "_" + d.toLocaleTimeString();
+  var MIME_TYPE = "text/json";
+  var bb = new Blob([JSON.stringify(records[rid].plan_input.plan)], {type: MIME_TYPE});
+  var a = document.getElementById("export_plan_link");
+  a.download = "plan-" + rid + "." + ds + ".json";
+  a.href = window.URL.createObjectURL(bb);
+  a.textContent = "Download";
+  a.dataset.downloadurl = [MIME_TYPE, a.download, a.href].join(":");
+  a.click();
+}
 
 </script>
 </head>
@@ -40,6 +90,27 @@ $(function() {
   <h1>Extreme Cooking Contest</h1>
   <h2>Top Plans</h2>
   <div id="records"></div>
+  <div id="record_title_template" style="display:none">
+    <h3 class="record">$score $title</h3>
+  </div>
+  <div id="record_body_template" style="display:none">
+    <p class="record">by <a href="$url"><img src="$image">$displayName</a></p>
+    <p class="record">
+      <button type="button" onclick="show_record($rid)"
+              id="$rid" class="show_record_button">Show Details</button>
+      <button type="button" onclick="hide_record($rid)"
+              id="$rid" class="hide_record_button">Hide Details</button>
+      <button class="export_plan_button" type="button" onclick="export_plan($rid)">Export</button>
+      <a id="export_plan_link" href="" style="display:none"></a>
+    </p>
+    <div id="$rid" class="record_details"></div>
+  </div>
+  <div id="plan_header_template" style="display:none">
+    <p>$days-day plan for $weightkg $age-old $lsg:</p>
+    <ul>$product_list</ul>
+    <table>
+    </table>
+  </div>
 
   <h2>Participate</h2>
   <p>Go to the <a href="http://nutrika-supeti.rhcloud.com/">Nutrika</a> site when you are ready to make your own plan.</p>
