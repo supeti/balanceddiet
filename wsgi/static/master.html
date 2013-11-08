@@ -25,7 +25,36 @@ var receive_records_list = function(data) {
 
 $(function() {
   $.get("json/list", receive_records_list);
+  if(typeof(Storage) !== "undefined") {
+  }
+  else {
+    alert("Attention! Your browser does not support HTML5 web storage.\nWeb storage is supported in Internet Explorer 8+, Firefox, Opera, Chrome, and Safari.");
+  }
 });
+
+function build_contents(data) {
+  var contents = $("#" + data.rid + ".contents");
+  contents.html("");
+  var head="", body="", title="";
+  contents.append($("#contents_caption_template").html());
+  var head_tmpl = $("#contents_head_template").html();
+  var body_tmpl = $("#contents_body_template").html();
+  $.each(data.contents.contents, function(i, item) {
+      title = item.title;
+      contents.append(head_tmpl.replace("$cols", "7").replace("$title", title));
+      body = "<tbody>";
+      $.each(item.data, function(i, item) {
+        if (item.amount != "N/A") {
+          row = body_tmpl.replace("$amount", item.amount).replace("$unit", item.unit);
+          row = row.replace("$description", item.desc);
+          row = row.replace("$ear", item.ear).replace("$rda", item.rda);
+          row = row.replace("$ai", item.ai).replace("$ul", item.ul);
+          body += row;
+        }
+      });
+      contents.append(body + "</tbody>");
+  });
+};
 
 var lsg = { 1:"infants", 2:"children", 3:"males", 4:"females", 5:"pregnant females", 6:"lactating females"};
 var records = new Object();
@@ -33,20 +62,21 @@ var receive_record = function(data) {
   records[data.rid] = data;
   var product_list = "";
   $.each(data.plan_input.plan.products, function(i, product) {
-    product_list += "<li>" + product.quantity + "x<ul>";
+    product_list += "<li>" + product.quantity + " " + product.name + "<ul>";
     $.each(product.ingredients, function(j, ingredient) {
-      product_list += "<li>" + ingredient.amount + "g " + ingredient.ndbno;
+      product_list += "<li>" + ingredient.amount + "g " + ingredient.ndbno + " " + ingredient.desc;
     });
     product_list += "</ul>";
   });
   var record = $("#plan_header_template").html().replace("$product_list", product_list);
   p = data.plan_input;
   record = record.replace("$days", p.plan.days).replace("$weight", p.weight).replace("$age", p.age);
-  record = record.replace("$lsg", lsg[p.lsg]);
+  record = record.replace("$lsg", lsg[p.lsg]).replace("$rid", data.rid);
   $("#" + data.rid + ".record_details").html(record);
   $("#" + data.rid + ".show_record_button").hide();
   $("#" + data.rid + ".hide_record_button").show();
   $("#" + data.rid + ".record_details").show();
+  build_contents(data);
 };
 
 function show_record(rid) {
@@ -108,8 +138,44 @@ function export_plan(rid) {
   <div id="plan_header_template" style="display:none">
     <p>$days-day plan for $weightkg $age-old $lsg:</p>
     <ul>$product_list</ul>
-    <table>
-    </table>
+    <table id="$rid" class="contents"></table>
+  </div>
+  <table id="contents_caption_template" style="display:none">
+    <caption>The plan contains:</caption>
+  </table>
+  <table id="contents_head_template" style="display:none">
+    <thead>
+      <tr>
+        <th colspan="$cols">$title</th>
+      </tr>
+      <tr>
+        <th class="right">Amount</th>
+        <th class="left">Unit</th>
+        <th>Description</th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Estimated Average Requirement">EAR</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Recommended Dietary Allowance">RDA</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Adequate Intake">AI</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="tolerable Upper Intake level">UL</a></th>
+      </tr>
+    </thead>
+  </table>
+  <table style="display:none">
+    <tbody id="contents_body_template">
+      <tr>
+        <td class="right">$amount</td>
+        <td class="left">$unit</td>
+        <td class="description">$description</td>
+        <td class="dri" title="Estimated Average Requirement">$ear</td>
+        <td class="dri" title="Recommended Dietary Allowance">$rda</td>
+        <td class="dri" title="Adequate Intake">$ai</td>
+        <td class="dri" title="tolerable Upper Intake level">$ul</td>
+      </tr>
+    </tbody>
+  </table>
   </div>
 
   <h2>Participate</h2>
