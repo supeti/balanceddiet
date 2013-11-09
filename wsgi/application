@@ -9,8 +9,6 @@ import sys
 import urllib.parse
 from wsgiref.util import FileWrapper
 
-import ecc
-
 if os.getenv("OPENSHIFT_REPO_DIR"):
     repo_dir = os.getenv("OPENSHIFT_REPO_DIR")
     data_dir = os.getenv("OPENSHIFT_DATA_DIR")
@@ -21,6 +19,7 @@ else:
     production_environment = False
 sys.path.append(os.path.join(repo_dir, "libs"))
 
+import ecc
 ecc.init(data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
