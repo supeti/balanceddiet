@@ -12,13 +12,12 @@ var receive_records_list = function(data) {
   var records = $("#records");
   records.html("");
   $.each(data, function(i, item) {
-    var title = $("#record_title_template").html().replace("$score", item.score).replace("$title", item.title);
-    records.append(title);
+    var record = $("#record_template").html().replace("$score", item.score).replace("$title", item.title);
     var user = item.user;
-    var body = $("#record_body_template").html().replace("$url", user.url).replace("$image", user.image);
-    body = body.replace("$displayName", user.displayName);
-    body = body.split("$rid").join(item.rid);
-    records.append(body);
+    record = record.replace("$url", user.url).replace("$image", user.image);
+    record = record.replace("$displayName", user.displayName);
+    record = record.split("$rid").join(item.rid);
+    records.append(record);
     $("#" + item.rid + ".hide_record_button").hide();
   });
 };
@@ -113,27 +112,27 @@ function export_plan(rid) {
 
 <body>
 
-  <h1>Attention!</h1>
+  <h1>Extreme Cooking Contest</h1>
 
+  <h2>Attention!</h2>
   <p>This site is a work in progress. Some features are present, some are missing, and it may crash at any time. However, you are welcome to test it, and share your thoughts at <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a> or at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
 
-  <h1>Extreme Cooking Contest</h1>
   <h2>Top Plans</h2>
   <div id="records"></div>
-  <div id="record_title_template" style="display:none">
-    <h3 class="record">$score $title</h3>
-  </div>
-  <div id="record_body_template" style="display:none">
-    <p class="record">by <a href="$url"><img src="$image">$displayName</a></p>
-    <p class="record">
-      <button type="button" onclick="show_record($rid)"
-              id="$rid" class="show_record_button">Show Details</button>
-      <button type="button" onclick="hide_record($rid)"
-              id="$rid" class="hide_record_button">Hide Details</button>
-      <button class="export_plan_button" type="button" onclick="export_plan($rid)">Export</button>
-      <a id="export_plan_link" href="" style="display:none"></a>
-    </p>
-    <div id="$rid" class="record_details"></div>
+  <div id="record_template" style="display:none">
+    <div class="record">
+      <h3 class="record">$score $title</h3>
+      <p class="user">by <a href="$url"><img src="$image">$displayName</a></p>
+      <p class="toolbar">
+        <button type="button" onclick="show_record($rid)"
+                id="$rid" class="show_record_button">Show Details</button>
+        <button type="button" onclick="hide_record($rid)"
+                id="$rid" class="hide_record_button">Hide Details</button>
+        <button class="export_plan_button" type="button" onclick="export_plan($rid)">Export</button>
+        <a id="export_plan_link" href="" style="display:none"></a>
+      </p>
+      <div id="$rid" class="record_details"></div>
+    </div>
   </div>
   <div id="plan_header_template" style="display:none">
     <p>$days-day plan for $weightkg $age-old $lsg:</p>
@@ -149,8 +148,7 @@ function export_plan(rid) {
         <th colspan="$cols">$title</th>
       </tr>
       <tr>
-        <th class="right">Amount</th>
-        <th class="left">Unit</th>
+        <th colspan="2">Amount</th>
         <th>Description</th>
         <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
                title="Estimated Average Requirement">EAR</a></th>
