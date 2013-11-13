@@ -55,10 +55,8 @@ table {
 }
 
 th, td {
-  border-style: none;
-  border-width: 1px;
-  margin: 0 0.5em 0 0.5em;
-  padding: 0 0.5em 0 0.5em;
+  margin: 0;
+  padding: 0 10px 0 10px;
 }
 
 .right {
