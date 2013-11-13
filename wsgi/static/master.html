@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Extreme Cooking Contest - best plan wins</title>
+    <title>Extreme Cooking Contest - having fun seriously</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="shortcut icon" href="/static/ECC-16.png" type="image/png">
     <link rel="stylesheet" type="text/css" href="/static/ECC.css">
+    <link rel='stylesheet' type='text/css' href='http://fonts.googleapis.com/css?family=Berkshire+Swash|Tienne:700|Istok+Web:400,400italic,700,700italic'>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>
 
@@ -35,7 +36,6 @@ function build_contents(data) {
   var contents = $("#" + data.rid + ".contents");
   contents.html("");
   var head="", body="", title="";
-  contents.append($("#contents_caption_template").html());
   var head_tmpl = $("#contents_head_template").html();
   var body_tmpl = $("#contents_body_template").html();
   $.each(data.contents.contents, function(i, item) {
@@ -117,6 +117,8 @@ function export_plan(rid) {
   <h2>Attention!</h2>
   <p>This site is a work in progress. Some features are present, some are missing, and it may crash at any time. However, you are welcome to test it, and share your thoughts at <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a> or at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
 
+  <p>Follow us: <a href="feed"><img width="32" height="32" src="http://upload.wikimedia.org/wikipedia/en/4/43/Feed-icon.svg" alt="Feed-icon.svg"></a></p>
+
   <h2>Top Plans</h2>
   <div id="records"></div>
   <div id="record_template" style="display:none">
@@ -135,13 +137,16 @@ function export_plan(rid) {
     </div>
   </div>
   <div id="plan_header_template" style="display:none">
-    <p>$days-day plan for $weightkg $age-old $lsg:</p>
-    <ul>$product_list</ul>
-    <table id="$rid" class="contents"></table>
+    <h4>Ingredients</h4>
+    <div class="summary">
+      <p>$days-day plan for $weightkg $age-old $lsg:</p>
+      <ul>$product_list</ul>
+    </div>
+    <h4>Contents</h4>
+    <div class="contents">
+      <table id="$rid" class="contents"></table>
+    </div>
   </div>
-  <table id="contents_caption_template" style="display:none">
-    <caption>The plan contains:</caption>
-  </table>
   <table id="contents_head_template" style="display:none">
     <thead>
       <tr>
