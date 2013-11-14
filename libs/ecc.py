@@ -149,9 +149,9 @@ def add_record(d):
 
 def backup():
     cwd = os.getcwd()
+    os.chdir(data_path)
     archive = 'backup.tar.xz'
     with tarfile.open(archive, "w:xz") as tar:
-        os.chdir(data_path)
         tar.add('feed')
         tar.add('records')
     os.chdir(cwd)
