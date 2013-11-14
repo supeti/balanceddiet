@@ -48,7 +48,7 @@ body = """<?xml version="1.0" encoding="utf-8"?>
     <subtitle>Recent Changes</subtitle>
     <link href="http://ecc-supeti.rhcloud.com/feed" rel="self" />
     <link href="http://ecc-supeti.rhcloud.com" />
-    <id>http://ecc-supeti.rhcloud.com</id>
+    <id>http://ecc-supeti.rhcloud.com/</id>
     <updated>%(updated)s</updated>
     <icon>http://ecc-supeti.rhcloud.com/static/ECC-16.png</icon>
     <logo>http://ecc-supeti.rhcloud.com/static/ECC-60.png</logo>
@@ -59,7 +59,7 @@ body = """<?xml version="1.0" encoding="utf-8"?>
 entry = """
         <entry>
                 <title>%(title)s</title>
-                <id>%(id)s</id>
+                <id>http://ecc-supeti.rhcloud.com/#%(id)s</id>
                 <updated>%(updated)s</updated>
                 <summary>%(summary)s</summary>
                 <author>
@@ -75,7 +75,7 @@ def dump_feed_entry(e, rid):
     score = 'score: ' + e['contents']['score']
     d = { 'title': e['title'],
           'id': rid,
-          'updated': datetime.datetime.now().isoformat(),
+          'updated': datetime.datetime.utcnow().isoformat() + 'Z',
           'summary': e['comments'],
           'name': user['displayName'],
           'author_uri': user['url'],
@@ -97,7 +97,7 @@ def load_feed():
             entries.append(f.read().decode())
     os.chdir(cwd)
     d = {}
-    d['updated'] = datetime.datetime.now().isoformat()
+    d['updated'] = datetime.datetime.utcnow().isoformat() + 'Z'
     d['entries'] = ''.join(entries)
     feed = gzip.compress((body % d).encode())
     feed_header[1] = ('Content-Length', str(len(feed)))
