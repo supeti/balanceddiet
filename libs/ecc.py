@@ -119,6 +119,7 @@ def load_records():
     global user_headers
     records.clear()
     cwd = os.getcwd()
+    print(records_path)
     os.chdir(records_path)
     files = os.listdir()
     max_rid = 0
@@ -140,7 +141,7 @@ def load_records():
     for i in rl[100:]:
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
-    print(rl)
+    print(str(rl).encode())
     list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
     os.chdir(cwd)
