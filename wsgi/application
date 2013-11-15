@@ -62,6 +62,16 @@ def application(environ, start_response):
             header, response = ecc.records[int(path_info[3])]
             start_response('200 OK', header)
             return response
+        elif path_info[2] == 'mylist':
+            length = int(environ['CONTENT_LENGTH'])
+            request = json.loads(environ['wsgi.input'].read(length).decode())
+            userid = ecc.get_gplus_account_id(request['access_token'])
+            if userid:
+                start_response('200 OK', ecc.user_headers[userid])
+                return ecc.user_records[userid]
+            else:
+                response_body = unauthorized_user
+                ctype = 'application/json; charset=UTF-8'
         else:
             print("unkkown json request:"+str(path_info))
     elif path_info[1] == 'feed':
@@ -113,7 +123,6 @@ def application(environ, start_response):
             user = request['user']
             if user['id'] == ecc.get_gplus_account_id(user['access_token']):
                 del request['password']
-                del user['id']
                 del user['access_token']
                 ecc.add_record(request)
                 response_body = successful_submit

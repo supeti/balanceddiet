@@ -60,6 +60,7 @@ entry = """
         <entry>
                 <title>%(title)s</title>
                 <id>http://ecc-supeti.rhcloud.com/#%(id)s</id>
+                <link rel='alternate' type='text/html' href='http://ecc-supeti.rhcloud.com/#%(id)s'/>
                 <updated>%(updated)s</updated>
                 <summary>%(summary)s</summary>
                 <author>
@@ -114,6 +115,8 @@ def load_records():
     global list_header
     global list_response
     global max_rid
+    global user_records
+    global user_headers
     records.clear()
     cwd = os.getcwd()
     os.chdir(records_path)
@@ -128,8 +131,9 @@ def load_records():
             header = json_header.copy()
             header[1] = ('Content-Length', str(len(response)))
             records[rid] = (header, [response])
-            rl.append({'score':record['contents']['score'], 'rid':rid,
-                      'title':record['title'], 'user':record['user']})
+            rec = {'score':record['contents']['score'], 'rid':rid,
+                   'title':record['title'], 'user':record['user']}
+            rl.append(rec)
             if max_rid < rid: max_rid = rid
     rl.sort(key=lambda d: (-float(d['score']), int(d['rid'])))
     for i in rl[100:]:
@@ -138,6 +142,19 @@ def load_records():
     list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
     os.chdir(cwd)
+    urlt = {}
+    user_headers = {}
+    user_records = {}
+    for rec in rl:
+        uid = rec['user']['id']
+        if not uid in urlt.keys():
+            urlt[uid] = []
+        urlt[uid].append(rec)
+    for uid in urlt.keys():
+        user_records[uid] = [ gzip.compress(json.dumps(urlt[uid]).encode()) ]
+        list_header = json_header.copy()
+        list_header[1] = ('Content-Length', str(len(urlt[uid][0])))
+        user_headers[uid] = list_header
 
 def add_record(d):
     global max_rid
@@ -174,4 +191,3 @@ def reset():
     os.chdir(records_path)
     for fn in os.listdir(): os.unlink(fn)
     os.chdir(cwd)
-

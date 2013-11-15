@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Extreme Cooking Contest - best plan wins</title>
+  <title>Extreme Cooking Contest - having fun seriously</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="shortcut icon" href="/static/ECC-16.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="/static/ECC.css">
@@ -13,6 +13,20 @@
   po.src = 'https://plus.google.com/js/client:plusone.js';
   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 })();
+
+var receive_records_list = function(data) {
+  var records = $("#records");
+  records.html("");
+  $.each(data, function(i, item) {
+    var record = $("#record_template").html().replace("$score", item.score).replace("$title", item.title);
+    var user = item.user;
+    record = record.replace("$url", user.url).replace("$image", user.image);
+    record = record.replace("$displayName", user.displayName);
+    record = record.split("$rid").join(item.rid);
+    records.append(record);
+    $("#" + item.rid + ".hide_record_button").hide();
+  });
+};
 
 function signinCallback(authResult) {
   gapi.client.load('plus','v1', function(){
@@ -27,6 +41,7 @@ function signinCallback(authResult) {
         $('#cooklink').html(text);
       });
       $("#profile").show();
+      $.post("json/mylist", JSON.stringify({access_token: authResult['access_token']}), receive_records_list);
     } else if (authResult['error']) {
       alert('Sign-in state: ' + authResult['error']);
     }
@@ -37,15 +52,56 @@ $(function() {
   $("#profile").hide();
 });
 
+function show_record(rid) {
+  if (!records[rid]) $.get("json/record/" + rid, receive_record);
+  else {
+    $("#" + rid + ".show_record_button").hide();
+    $("#" + rid + ".hide_record_button").show();
+    $("#" + rid + ".record_details").show();
+  }
+}
+
+function hide_record(rid) {
+  $("#" + rid + ".show_record_button").show();
+  $("#" + rid + ".hide_record_button").hide();
+  $("#" + rid + ".record_details").hide();
+}
+
+function export_plan(rid) {
+  var d = new Date();
+  ds = d.toISOString().split("T")[0] + "_" + d.toLocaleTimeString();
+  var MIME_TYPE = "text/json";
+  var bb = new Blob([JSON.stringify(records[rid].plan_input.plan)], {type: MIME_TYPE});
+  var a = document.getElementById("export_plan_link");
+  a.download = "plan-" + rid + "." + ds + ".json";
+  a.href = window.URL.createObjectURL(bb);
+  a.textContent = "Download";
+  a.dataset.downloadurl = [MIME_TYPE, a.download, a.href].join(":");
+  a.click();
+}
+
+function delete_all_records() {
+  if (confirm("You pressed 'Delete All'.\nAre you sure you want to delete all your records?") == true) {
+    
+  } 
+}
+
+function delete_selected_records() {
+  if (confirm("You pressed 'Delete Selected'.\nAre you sure you want to delete the selected records?") == true) {
+    
+  } 
+}
+
 </script>
 </head>
 <body>
 
-  <h1>Attention!</h1>
+  <h1>Extreme Cooking Contest</h1>
 
+  <h2>Attention!</h2>
   <p>This site is a work in progress. Some features are present, some are missing, and it may crash at any time. However, you are welcome to test it, and share your thoughts at <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a> or at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
 
-  <h1>Extreme Cooking Contest</h1>
+  <h2>Profile</h2>
   <div id="login">
     <p>You need to identify yourself to see and change your data. Choose one of the followin authentication methods:</p> 
     <span id="signinButton">
@@ -55,21 +111,27 @@ $(function() {
     </span>
     </span>
   </div>
-  <div id="profile">
-    <p>You are <span id="cooklink"></span></p>
-    <dl>
-      <dt>Plan</dt>
-      <dd>
-        <dl>
-          <dt>Title:</dt>
-          <dd><input type="text" name="title" value="Anonymous"></dd>
-          <dt>Score:</dt>
-          <dd id="score"></dd>
-          <dt>Items:</dt>
-          <dd id="items"></dd>
-        </dl>
-      </dd>
-    </dl>
+  <p id="profile">You are <span id="cooklink"></span></p>
+  <h2>Records
+    <button type="button" onclick="delete_selected_records()">Delete Selected</button>
+    <button type="button" onclick="delete_all_records()">Delete All</button>
+  </h2>
+  <div id="records"></div>
+  <div id="record_template" style="display:none">
+    <div class="record">
+      <h3 class="record">$score $title</h3>
+      <p class="user">by <a href="$url"><img src="$image">$displayName</a></p>
+      <p class="toolbar">
+        <button type="button" onclick="show_record($rid)"
+                id="$rid" class="show_record_button">Show Details</button>
+        <button type="button" onclick="hide_record($rid)"
+                id="$rid" class="hide_record_button">Hide Details</button>
+        <button class="export_plan_button" type="button" onclick="export_plan($rid)">Export</button>
+        <a id="export_plan_link" href="" style="display:none"></a>
+        Mark for delete: <input class="selected_record" type="checkbox" value="$rid">
+      </p>
+      <div id="$rid" class="record_details"></div>
+    </div>
   </div>
 
   <script type="text/javascript">
