@@ -131,7 +131,7 @@ def load_records():
             header = json_header.copy()
             header[1] = ('Content-Length', str(len(response)))
             records[rid] = (header, [response])
-            print(record['user'])
+            print(str(record['user']['id']))
             rec = {'score':record['contents']['score'], 'rid':rid,
                    'title':record['title'], 'user':record['user']}
             rl.append(rec)
