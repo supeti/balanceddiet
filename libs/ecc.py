@@ -131,6 +131,7 @@ def load_records():
             header = json_header.copy()
             header[1] = ('Content-Length', str(len(response)))
             records[rid] = (header, [response])
+            print(record['user'])
             rec = {'score':record['contents']['score'], 'rid':rid,
                    'title':record['title'], 'user':record['user']}
             rl.append(rec)
@@ -139,6 +140,7 @@ def load_records():
     for i in rl[100:]:
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
+    print(rl)
     list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
     os.chdir(cwd)
