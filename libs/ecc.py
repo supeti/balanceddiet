@@ -146,6 +146,7 @@ def load_records():
     user_headers = {}
     user_records = {}
     for rec in rl:
+      if 'id' in rec['user'].keys():
         uid = rec['user']['id']
         if not uid in urlt.keys():
             urlt[uid] = []
