@@ -139,11 +139,8 @@ def load_records():
     for i in rl[100:]:
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
-    print(json.dumps(rl).encode())
-    print(list_response[0])
     list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
-    print(list_header)
     os.chdir(cwd)
     urlt = {}
     user_headers = {}
@@ -155,9 +152,9 @@ def load_records():
         urlt[uid].append(rec)
     for uid in urlt.keys():
         user_records[uid] = [ gzip.compress(json.dumps(urlt[uid]).encode()) ]
-        list_header = json_header.copy()
-        list_header[1] = ('Content-Length', str(len(urlt[uid][0])))
-        user_headers[uid] = list_header
+        header = json_header.copy()
+        header[1] = ('Content-Length', str(len(urlt[uid][0])))
+        user_headers[uid] = header
 
 def add_record(d):
     global max_rid
