@@ -153,7 +153,7 @@ def load_records():
     for uid in urlt.keys():
         user_records[uid] = [ gzip.compress(json.dumps(urlt[uid]).encode()) ]
         header = json_header.copy()
-        header[1] = ('Content-Length', str(len(urlt[uid][0])))
+        header[1] = ('Content-Length', str(len(user_records[uid][0])))
         user_headers[uid] = header
 
 def add_record(d):
