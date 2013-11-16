@@ -191,3 +191,16 @@ def reset():
     os.chdir(records_path)
     for fn in os.listdir(): os.unlink(fn)
     os.chdir(cwd)
+
+def delete_user_records(uid, rids):
+    urlt = json.loads(gzip.decompress(user_records[uid][0]).decode())
+    for rec in urlt:
+        rid = str(rec['rid'])
+        if rid in rids:
+            path = os.path.join(records_path, str(rid) + '.xz')
+            os.unlink(path)
+            path = os.path.join(feed_path, str(rid) + '.gz')
+            os.unlink(path)
+    load_records()
+    load_feed()
+

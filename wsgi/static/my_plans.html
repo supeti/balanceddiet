@@ -28,9 +28,11 @@ var receive_records_list = function(data) {
   });
 };
 
+var access_token;
 function signinCallback(authResult) {
   gapi.client.load('plus','v1', function(){
     if (authResult['access_token']) {
+      access_token = authResult['access_token'];
       $('#login').hide();
       gapi.client.plus.people.get({'userId' : 'me'}).execute(function(resp) {
         var text = "<a href='" + resp.url + "'>";
@@ -82,13 +84,29 @@ function export_plan(rid) {
 
 function delete_all_records() {
   if (confirm("You pressed 'Delete All'.\nAre you sure you want to delete all your records?") == true) {
-    
+    var i = 0;
+    var rids = new Array();
+    $(".selected_record").each(function() {
+      if ($(this).val() != '$rid') rids[i++] = $(this).val();
+    });
+    data = new Object();
+    data.access_token = access_token;
+    data.rids = rids;
+    $.post("json/delete", JSON.stringify(data), receive_records_list);
   } 
 }
 
 function delete_selected_records() {
   if (confirm("You pressed 'Delete Selected'.\nAre you sure you want to delete the selected records?") == true) {
-    
+    var i = 0;
+    var rids = new Array();
+    $(".selected_record").each(function() {
+      if ($(this).is(":checked")) rids[i++] = $(this).val();
+    });
+    data = new Object();
+    data.access_token = access_token;
+    data.rids = rids;
+    $.post("json/delete", JSON.stringify(data), receive_records_list);
   } 
 }
 
