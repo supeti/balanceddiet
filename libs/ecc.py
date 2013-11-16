@@ -119,7 +119,6 @@ def load_records():
     global user_headers
     records.clear()
     cwd = os.getcwd()
-    print(records_path)
     os.chdir(records_path)
     files = os.listdir()
     max_rid = 0
@@ -132,7 +131,6 @@ def load_records():
             header = json_header.copy()
             header[1] = ('Content-Length', str(len(response)))
             records[rid] = (header, [response])
-            print(str(record['user']['id']))
             rec = {'score':record['contents']['score'], 'rid':rid,
                    'title':record['title'], 'user':record['user']}
             rl.append(rec)
@@ -142,9 +140,10 @@ def load_records():
         if 100 - rl[1] < max_rid: os.unlink
     list_response = [ gzip.compress(json.dumps(rl).encode()) ]
     print(json.dumps(rl).encode())
-    print(list_response)
+    print(list_response[0])
     list_header = json_header.copy()
     list_header[1] = ('Content-Length', str(len(list_response[0])))
+    print(list_header)
     os.chdir(cwd)
     urlt = {}
     user_headers = {}
