@@ -1,184 +1,179 @@
 #!/usr/bin/env python
+
+import cgi
+import gzip
+import io
+import json
 import os
+import sys
+import urllib.parse
+from wsgiref.util import FileWrapper
 
+if os.getenv("OPENSHIFT_REPO_DIR"):
+    repo_dir = os.getenv("OPENSHIFT_REPO_DIR")
+    data_dir = os.getenv("OPENSHIFT_DATA_DIR")
+    production_environment = True
+else:
+    repo_dir = os.path.abspath(os.pardir)
+    data_dir = os.path.join(repo_dir, "data")
+    production_environment = False
+sys.path.append(os.path.join(repo_dir, "libs"))
+
+import ecc
+ecc.init(data_dir)
+
+static_dir = os.path.join(repo_dir, "wsgi/static")
+
+class Static(object):
+  def __init__(self, path, content_type):
+    with open(os.path.join(static_dir, path), 'rb') as f:
+        data = gzip.compress(f.read())
+    self.header = [('Content-Type', content_type), 
+                   ('Content-Length', str(len(data))),
+                   ('Content-Encoding', 'gzip')]
+    self.response = [data]
+
+static_objects = {
+    'main.css': Static('main.css', 'text/css'),
+    'Cherry-16.png': Static('Cherry-16.png', 'image/png'),
+    'Cherry-48.png': Static('Cherry-48.png', 'image/png'),
+    'Cherry-512.png': Static('Cherry-512.png', 'image/png'),
+    'master.html': Static('master.html', 'text/html; charset=UTF-8'),
+    'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
+    'my_plans.html': Static('my_plans.html', 'text/html; charset=UTF-8'),
+    'received.html': Static('received.html', 'text/html; charset=UTF-8'),
+    'admin.html': Static('admin.html', 'text/html; charset=UTF-8')
+}
+
+def get_list():
+    if userid:
+        if userid in ecc.user_headers:
+            return 
+            start_response('200 OK', ecc.user_headers[userid])
+            return ecc.user_records[userid]
+        else:
+            return (empty_list, 'application/json; charset=UTF-8')
+    else:
+        return (empty_list, 'application/json; charset=UTF-8')
+
+unauthorized_user = ('{ "result":"error", ' + 
+                     '"response":"Authentication of user failed." }')
+unauthorized_client = ('{ "result":"error", ' +
+                       '"response":"Authentication of client failed." }')
+successful_submit = '{ "result":"success" }'
+empty_list = '[]'
 def application(environ, start_response):
-	ctype = 'text/plain'
-	if environ['PATH_INFO'] == '/health':
-		response_body = "1"
-	elif environ['PATH_INFO'] == '/env':
-		response_body = ['%s: %s' % (key, value)
-                    for key, value in sorted(environ.items())]
-		response_body = '\n'.join(response_body)
-	else:
-		ctype = 'text/html'
-		response_body = '''<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <title>Welcome to OpenShift</title>
-  <style>
-  html { 
-  background: black; 
-  }
-  body {
-    background: #333;
-    background: -webkit-linear-gradient(top, black, #666);
-    background: -o-linear-gradient(top, black, #666);
-    background: -moz-linear-gradient(top, black, #666);
-    background: linear-gradient(top, black, #666);
-    color: white;
-    font-family: "Helvetica Neue",Helvetica,"Liberation Sans",Arial,sans-serif;
-    width: 40em;
-    margin: 0 auto;
-    padding: 3em;
-  }
-  a {
-    color: white;
-  }
+    ctype = 'text/plain; charset=UTF-8'
+    path_info = environ['PATH_INFO'].split('/')
+    if path_info[1] == 'json':
+        if path_info[2] == 'list':
+            start_response('200 OK', ecc.list_header)
+            return ecc.list_response
+        elif path_info[2] == 'record':
+            header, response = ecc.records[int(path_info[3])]
+            start_response('200 OK', header)
+            return response
+        elif path_info[2] == 'mylist':
+            length = int(environ['CONTENT_LENGTH'])
+            request = json.loads(environ['wsgi.input'].read(length).decode())
+            userid = ecc.get_gplus_account_id(request['access_token'])
+            if userid and userid in ecc.user_headers:
+                start_response('200 OK', ecc.user_headers[userid])
+                return ecc.user_records[userid]
+            else:
+                response_body = empty_list
+                ctype = 'application/json; charset=UTF-8'
+        elif path_info[2] == 'delete':
+            length = int(environ['CONTENT_LENGTH'])
+            request = json.loads(environ['wsgi.input'].read(length).decode())
+            userid = ecc.get_gplus_account_id(request['access_token'])
+            if userid: ecc.delete_user_records(userid, request['rids'])
+            if userid and userid in ecc.user_headers:
+                start_response('200 OK', ecc.user_headers[userid])
+                return ecc.user_records[userid]
+            else:
+                response_body = empty_list
+                ctype = 'application/json; charset=UTF-8'
+        else:
+            print("unkkown json request:"+str(path_info))
+    elif path_info[1] == 'feed':
+        start_response('200 OK', ecc.feed_header)
+        return ecc.feed_response
+    elif not path_info[1]:
+        print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
+        if 'iPad' in environ['HTTP_USER_AGENT']:
+            static = static_objects['mobile.html']
+        else:
+            static = static_objects['master.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'mobile':
+        static = static_objects['mobile.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'my_plans':
+        static = static_objects['my_plans.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'admin':
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'backup.tar.xz':
+        data = ecc.backup()
+        print(data)
+        start_response('200 OK', [('Content-type', 'application/x-gtar')])
+        return FileWrapper(open(data, "rb"))
+    elif path_info[1] == 'restore':
+        length = int(environ['CONTENT_LENGTH'])
+        with open('restore.dat', 'wb') as f:
+            f.write(environ['wsgi.input'].read(length))
+        with open('restore.dat', 'r') as f:
+            form = cgi.FieldStorage(fp=f, environ=environ)
+            with open('restore.tar.xz', 'wb') as g:
+                g.write(form['archive'].value)
+        if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
+            ecc.restore('restore.tar.xz')
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'submit':
+        length = int(environ['CONTENT_LENGTH'])
+        request = json.loads(environ['wsgi.input'].read(length).decode())
+        print(environ)
+        if request['password'] == 'b7647ea13a32fef8d9f341f921d6c69e14401133':
+            user = request['user']
+            if user['id'] == ecc.get_gplus_account_id(user['access_token']):
+                del request['password']
+                del user['access_token']
+                ecc.add_record(request)
+                response_body = successful_submit
+            else:
+                response_body = unauthorized_user
+        else:
+            response_body = unauthorized_client
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'static':
+        static = static_objects[path_info[2]]
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'health':
+        response_body = "1"
+    elif path_info[1] == 'env':
+        response_body = '\n'.join(['%s: %s' % (key, value)
+                                   for key, value in sorted(environ.items())])
+    else:
+        response_body = ''
 
-  h1 {
-    text-transform: capitalize;
-    -moz-text-shadow: -1px -1px 0 black;
-    -webkit-text-shadow: 2px 2px 2px black;
-    text-shadow: -1px -1px 0 black;
-    box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.5);
-    background: #CC0000;
-    width: 22.5em;
-    margin: 1em -2em;
-    padding: .3em 0 .3em 1.5em;
-    position: relative;
-  }
-  h1:before {
-    content: '';
-    width: 0;
-    height: 0;
-    border: .5em solid #91010B;
-    border-left-color: transparent;
-    border-bottom-color: transparent;
-    position: absolute;
-    bottom: -1em;
-    left: 0;
-    z-index: -1000;
-  }
-  h1:after {
-    content: '';
-    width: 0;
-    height: 0;
-    border: .5em solid #91010B;
-    border-right-color: transparent;
-    border-bottom-color: transparent;
-    position: absolute;
-    bottom: -1em;
-    right: 0;
-    z-index: -1000;
-  }
-  h2 { 
-    margin: 2em 0 .5em;
-    border-bottom: 1px solid #999;
-  }
+    status = '200 OK'
+    response_headers = [('Content-Type', ctype), 
+                        ('Content-Length', str(len(response_body)))]
+    start_response(status, response_headers)
+    return [ response_body.encode('UTF-8') ]
 
-  pre {
-    background: black;
-    padding: 1em 0 0;
-    -webkit-border-radius: 1em;
-    -moz-border-radius: 1em;
-    border-radius: 1em;
-    color: #9cf;
-  }
-
-  ul { 
-    margin: 0; 
-    padding: 0;
-  }
-  li {
-    list-style-type: none;
-    padding: .5em 0;
-  }
-
-  .brand {
-    display: block;
-    text-decoration: none;
-  }
-  .brand .brand-image {
-    float: left;
-    border:none;
-  }
-  .brand .brand-text {
-    float: left;
-    font-size: 24px;
-    line-height: 24px;
-    padding: 4px 0;
-    color: white;
-    text-transform: uppercase;
-  }
-  .brand:hover,
-  .brand:active {
-    text-decoration: underline;
-  }
-
-  .brand:before,
-  .brand:after {
-    content: ' ';
-    display: table;
-  }
-  .brand:after {
-    clear: both;
-  }
-  </style>
-</head>
-<body>
-  <a href="http://openshift.com" class="brand">
-    <img class="brand-image"
-      alt="OpenShift logo"
-      src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAYAAABU1PscAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAARHgAAER4B27UUrQAABUhJREFUWMPFWFlsVGUU/s5/70zbaSltA7RQpJ2lC9CFkQkWIgSJxkAhRA0JCYFq4hPG6JsoGKNCtPigxqhvGlPAuGIaE4igNaElbIW2yNL2tkOtTYGWCqWF2e79fCh7p1Bmpnge/3vuOef7z/nPJiTxMHS6pMRuu6YqFNTTAJYSyAU4GZB0AH2AGCANAfc5Qrba6T3HrmECScYLwCioSIcV2AjidQDZ45Q/LJRaWrLV03X89P8GwHB5XwG4DcDkGPWEBKimNrzN094efGQAzjm9GWHFr4R4LiHKgFaSL3r8zYcmHEBbkW+KFo7UEyhKsNeHlMgyV8eJo4kQpqId9ub6HCoc+XWcxl8lcBTATwDax8GfZtHa054/f/bNg8ZcnyOhHjBc834E8MJ9/vML8aYZQX1hd1PP3WFXkhMRfYkIlpOoGomc0WRRTnch+XAQWG2KTNJNLbuy68C/cQMwXOWrAKkdgz8A8kMdg9X5fn/gQcI7POXLaMk3AGbe/P8SbF0D1KcGRGXpIJJpIQkWBHhnsf/Ie3GF0DmnMxmQT8bg7RellXr8ze+Ox3gAcBvNf+iUUhH5FODLSvScAerDGpiVxTAyGUYKzICA34nCwbhDyHB7N4L8PAofhVzh9jfvjffR/ZZTnupIsR8G0C9EjW7Tfnii/dBgrPL0u83kmjHy33Z3Z/zG97uKi7xpWA8GHZpE1mcZRne8MvXblfbxqQAWR+Fp+mdW5hZPjAqu5JVlhrTwOgrXi2ABbjjchF4FYGvi0qhprgagjYod4OeldXWRWBUEtdBjEH4mwIJ7vF2V4Dqgot0+NEFdPAqmdZ5tAXA8Slx6LrpKsxMHQJge5ft1v0oe2OOu+PZ39+LCOFqImqiXo8JzAeBkXlnmnoKK9LgACJl2R9gELsHW1saUwKCpnbIoa8UMTokVgGXJmSjHkfNWUlWDy9d6USVdyoiEF8b1iElxQKHuPG1D/bCtVEBhCiykMQQFgCK2mN2sSx+tkdcbhGq7wKSkK9RnmsCG2xVSLsflAR1S6eloWhawtF8yGJGskSJDBdQR8pIjZMXcfFmm1gOg2lRaSRdT1AD1PBPQbCAyxcRMifCpc41HEtILNbh9s8SSvYTUmBp2LDGOdCOB1OD0XbeByWliwY5bugc9nU2T4wqhCx7PNAV9bSGwARp3TzVaP0j09GQUzJubLUgefY3SEHMh63MVr4FIlYL+7C1AlCwAmxM+/plYy6hhgN2xp1HBawAr72krnH3uoicTaXyHx7uIwKZoT0QhUhszAAI7x7ivL0a60/jp77yyTFrWt6N6rxE99c7OkxdiBhC2y/cAorXHpama/aNG8dkOO32b6p3zTzXmeysfPu4LkkKafA3IrGjfCfPtuGfiPlfx+xBsuWtwpa3zIuy2YaoZ5o0eSQc5TVnb53aeeAuk9eBtRvkqUH0MoTsqA7nL429eFzeA3lyfQ08eaiNgCrjTYNozQ1S+WyUfQCosTLqZ+oiDUNwhggPujpZTuCMXGwUV6cJgKYnNIJffR3df2NLLZ5871puQrUR//pzpU7rOnAfJP53eDELrsoPpk4RIGRn5xqIBAAdBOCAoBjBjPJsJUdZSt9HSOGFrld5cn2M4KbwfkIUJzqYhQlYWdJ7YN2FrFQCY3nPsmk61AuSuRNYyUdaiRBk/7tViR37Zcir1JYC8WNshgjWWPfhq0dmzVx/5bhQAWnLKU1Md8gZHOsjxAgmD2GEKq4s6m1sxASQPu16HiBh53goqPg9ac0TEcwNQEOBlQAZEcMgC94dDZt2c7r8GMIH0H43ZRDC51RVCAAAAAElFTkSuQmCC">
-    <div class="brand-text"><strong>Open</strong>Shift</div>
-  </a>
-  <h1>
-    Welcome to Python-3.3 running on OpenShift
-  </h1>
-  <p>
-    This is a sample WSGI application running on Python 3.3
-  </p>
-  <p>
-    In order to commit to your new project, go to your projects git repo (created with the rhc app create command).  Make your changes, then run:
-  </p>
-  <pre>
-    git commit -a -m 'Some commit message'
-    git push
-  </pre>
-  <p>
-    Then reload this page.
-  </p>
-  
-  <h2>
-    What's next?
-  </h2>
-  <ul>
-    <li>
-      Why not visit us at <a href="http://www.openshift.com">http://www.openshift.com</a>, or
-    </li>
-    <li>
-      You could get help in the <a href="http://www.openshift.com/forums/openshift">OpenShift forums</a>, or
-    </li>
-    <li>
-      You're welcome to come chat with us in our IRC channel at #openshift on freenode.net
-    </li>
-  </ul>
-</body>
-</html>'''
-
-	status = '200 OK'
-	response_headers = [('Content-Type', ctype), ('Content-Length', str(len(response_body)))]
-	#
-	start_response(status, response_headers)
-	return [response_body.encode('utf-8') ]
-
-#
-# Below for testing only
-#
 if __name__ == '__main__':
-	from wsgiref.simple_server import make_server
-	httpd = make_server('localhost', 8051, application)
-	# Wait for a single request, serve it and quit.
-	httpd.handle_request()
+    from wsgiref.simple_server import make_server
+    httpd = make_server('localhost', 8052, application)
+    #httpd = make_server('192.168.1.90', 8052, application)
+    httpd.serve_forever()
+
