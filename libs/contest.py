@@ -10,8 +10,7 @@ import pickle
 import tarfile
 from html.parser import HTMLParser
 from urllib.parse import urlencode
-from urllib.request import urlopen, build_opener, install_opener
-from urllib.request import HTTPHandler, ProxyHandler, Request
+from urllib.request import urlopen, Request
 
 records = {}
 list_response = []
@@ -35,32 +34,35 @@ def init(data_dir):
     if not os.path.isdir(records_path): os.makedirs(records_path)
     load_feed()
     load_records()
+    #install_opener(build_opener(ProxyHandler({})))
 
 def get_gplus_account_id(access_token):
     request = Request('https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + access_token)
     request.add_header('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8')
     args = json.loads(urlopen(request).readall().decode())
+    print(args)
     return args['id']
 
 body = """<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <title>Extreme Cooking Contest</title>
+    <title>Balanced Diet Contest</title>
     <subtitle>Recent Changes</subtitle>
-    <link href="http://ecc-supeti.rhcloud.com/feed" rel="self" />
-    <link href="http://ecc-supeti.rhcloud.com" />
-    <id>http://ecc-supeti.rhcloud.com/</id>
+    <link href="%(site)s/feed" rel="self" />
+    <link href="%(site)s" />
+    <id>%(site)s</id>
     <updated>%(updated)s</updated>
-    <icon>http://ecc-supeti.rhcloud.com/static/ECC-16.png</icon>
-    <logo>http://ecc-supeti.rhcloud.com/static/ECC-60.png</logo>
+    <icon>%(site)s/static/Cherry-16.png</icon>
+    <logo>%(site)s/static/Cherry-48.png</logo>
 %(entries)s
 </feed>
 """
+site_url = 'http://balanceddiet-supeti.rhcloud.com'
 
 entry = """
         <entry>
                 <title>%(title)s</title>
-                <id>http://ecc-supeti.rhcloud.com/#%(id)s</id>
-                <link rel='alternate' type='text/html' href='http://ecc-supeti.rhcloud.com/#%(id)s'/>
+                <id>%(site)s/#%(id)s</id>
+                <link rel='alternate' type='text/html' href='%(site)s/#%(id)s'/>
                 <updated>%(updated)s</updated>
                 <summary>%(summary)s</summary>
                 <author>
@@ -81,6 +83,7 @@ def dump_feed_entry(e, rid):
           'name': user['displayName'],
           'author_uri': user['url'],
           'content': score,
+          'site': site_url
         }
     path = os.path.join(feed_path, str(rid) + '.gz')
     with gzip.open(path, 'wb') as f:
@@ -100,6 +103,7 @@ def load_feed():
     d = {}
     d['updated'] = datetime.datetime.utcnow().isoformat() + 'Z'
     d['entries'] = ''.join(entries)
+    d['site'] = site_url
     feed = gzip.compress((body % d).encode())
     feed_header[1] = ('Content-Length', str(len(feed)))
     global feed_response

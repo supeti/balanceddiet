@@ -19,8 +19,8 @@ else:
     production_environment = False
 sys.path.append(os.path.join(repo_dir, "libs"))
 
-import ecc
-ecc.init(data_dir)
+import contest
+contest.init(data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
 
@@ -47,10 +47,10 @@ static_objects = {
 
 def get_list():
     if userid:
-        if userid in ecc.user_headers:
+        if userid in contest.user_headers:
             return 
-            start_response('200 OK', ecc.user_headers[userid])
-            return ecc.user_records[userid]
+            start_response('200 OK', contest.user_headers[userid])
+            return contest.user_records[userid]
         else:
             return (empty_list, 'application/json; charset=UTF-8')
     else:
@@ -67,38 +67,38 @@ def application(environ, start_response):
     path_info = environ['PATH_INFO'].split('/')
     if path_info[1] == 'json':
         if path_info[2] == 'list':
-            start_response('200 OK', ecc.list_header)
-            return ecc.list_response
+            start_response('200 OK', contest.list_header)
+            return contest.list_response
         elif path_info[2] == 'record':
-            header, response = ecc.records[int(path_info[3])]
+            header, response = contest.records[int(path_info[3])]
             start_response('200 OK', header)
             return response
         elif path_info[2] == 'mylist':
             length = int(environ['CONTENT_LENGTH'])
             request = json.loads(environ['wsgi.input'].read(length).decode())
-            userid = ecc.get_gplus_account_id(request['access_token'])
-            if userid and userid in ecc.user_headers:
-                start_response('200 OK', ecc.user_headers[userid])
-                return ecc.user_records[userid]
+            userid = contest.get_gplus_account_id(request['access_token'])
+            if userid and userid in contest.user_headers:
+                start_response('200 OK', contest.user_headers[userid])
+                return contest.user_records[userid]
             else:
                 response_body = empty_list
                 ctype = 'application/json; charset=UTF-8'
         elif path_info[2] == 'delete':
             length = int(environ['CONTENT_LENGTH'])
             request = json.loads(environ['wsgi.input'].read(length).decode())
-            userid = ecc.get_gplus_account_id(request['access_token'])
-            if userid: ecc.delete_user_records(userid, request['rids'])
-            if userid and userid in ecc.user_headers:
-                start_response('200 OK', ecc.user_headers[userid])
-                return ecc.user_records[userid]
+            userid = contest.get_gplus_account_id(request['access_token'])
+            if userid: contest.delete_user_records(userid, request['rids'])
+            if userid and userid in contest.user_headers:
+                start_response('200 OK', contest.user_headers[userid])
+                return contest.user_records[userid]
             else:
                 response_body = empty_list
                 ctype = 'application/json; charset=UTF-8'
         else:
             print("unkkown json request:"+str(path_info))
     elif path_info[1] == 'feed':
-        start_response('200 OK', ecc.feed_header)
-        return ecc.feed_response
+        start_response('200 OK', contest.feed_header)
+        return contest.feed_response
     elif not path_info[1]:
         print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
         if 'iPad' in environ['HTTP_USER_AGENT']:
@@ -120,7 +120,7 @@ def application(environ, start_response):
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'backup.tar.xz':
-        data = ecc.backup()
+        data = contest.backup()
         print(data)
         start_response('200 OK', [('Content-type', 'application/x-gtar')])
         return FileWrapper(open(data, "rb"))
@@ -133,20 +133,19 @@ def application(environ, start_response):
             with open('restore.tar.xz', 'wb') as g:
                 g.write(form['archive'].value)
         if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
-            ecc.restore('restore.tar.xz')
+            contest.restore('restore.tar.xz')
         static = static_objects['admin.html']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'submit':
         length = int(environ['CONTENT_LENGTH'])
         request = json.loads(environ['wsgi.input'].read(length).decode())
-        print(environ)
         if request['password'] == 'b7647ea13a32fef8d9f341f921d6c69e14401133':
             user = request['user']
-            if user['id'] == ecc.get_gplus_account_id(user['access_token']):
+            if user['id'] == contest.get_gplus_account_id(user['access_token']):
                 del request['password']
                 del user['access_token']
-                ecc.add_record(request)
+                contest.add_record(request)
                 response_body = successful_submit
             else:
                 response_body = unauthorized_user
