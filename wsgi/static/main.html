@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Balanced Diet Contest</title>
+  <title>Balanced Diet</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link rel="shortcut icon" href="/static/Cherry-16.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="/static/main.css">
@@ -112,78 +112,26 @@ function export_plan(rid) {
 
 <body>
 
-  <h1>Balanced Diet Contest</h1>
+  <h1>Balanced Diet</h1>
+  <a href='/calculator'>Calculator</a>
+  <a href='/contest'>Contest</a>
 
-  <h2>Attention!</h2>
-  <p>This site is a work in progress. Some features are present, some are missing, and it may crash at any time. However, you are welcome to test it, and share your thoughts at <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a> or at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
+  <h2>Welcome</h2>
+  <p>This site is a place for developing and testing balanced diet related applications. Join the <a href="https://plus.google.com/u/0/communities/100680827449853706792">Balanced Diet Community</a> to get involved.</p>
 
-  <p>Follow us: <a href="feed"><img width="32" height="32" src="http://upload.wikimedia.org/wikipedia/en/4/43/Feed-icon.svg" alt="Feed-icon.svg"></a></p>
+  <h2><a href="calculator">Nutrient Calculator</a></h2>
+  <p>The nutrient calculator<ul>
+    <li>shows food nutrient contents, and compares them to the recommended intake for a group of people
+    <li>lists nutrient and recommended intake values for 100g or 3.527oz of food items,
+    <li>calculates price / nutrient value ratios for complex products and combinations of complex products (several day long plans),
+    <li>forwards diet plans to the <a href="contest">Diet Plan Contest</a>,
+    <li>provides examination and certification for the Balanced Diet Expert badge.
+    </ul>Start planning on the <a href="calculator">calculator</a> page.
+  </p>
 
-  <h2>Top Plans</h2>
-  <div id="records"></div>
-  <div id="record_template" style="display:none">
-    <div class="record">
-      <h3 class="record">$score $title</h3>
-      <p class="user">by <a href="$url"><img src="$image">$displayName</a></p>
-      <p class="toolbar">
-        <button type="button" onclick="show_record($rid)"
-                id="$rid" class="show_record_button">Show Details</button>
-        <button type="button" onclick="hide_record($rid)"
-                id="$rid" class="hide_record_button">Hide Details</button>
-        <button class="export_plan_button" type="button" onclick="export_plan($rid)">Export</button>
-        <a id="export_plan_link" href="" style="display:none"></a>
-      </p>
-      <div id="$rid" class="record_details"></div>
-    </div>
-  </div>
-  <div id="plan_header_template" style="display:none">
-    <h4>Ingredients</h4>
-    <div class="summary">
-      <p>$days-day plan for $weightkg $age-old $lsg:</p>
-      <ul>$product_list</ul>
-    </div>
-    <h4>Contents</h4>
-    <div class="contents">
-      <table id="$rid" class="contents"></table>
-    </div>
-  </div>
-  <table id="contents_head_template" style="display:none">
-    <thead>
-      <tr>
-        <th colspan="$cols">$title</th>
-      </tr>
-      <tr>
-        <th colspan="2">Amount</th>
-        <th>Description</th>
-        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
-               title="Estimated Average Requirement">EAR</a></th>
-        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
-               title="Recommended Dietary Allowance">RDA</a></th>
-        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
-               title="Adequate Intake">AI</a></th>
-        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
-               title="tolerable Upper Intake level">UL</a></th>
-      </tr>
-    </thead>
-  </table>
-  <table style="display:none">
-    <tbody id="contents_body_template">
-      <tr>
-        <td class="right">$amount</td>
-        <td class="left">$unit</td>
-        <td class="description">$description</td>
-        <td class="dri" title="Estimated Average Requirement">$ear</td>
-        <td class="dri" title="Recommended Dietary Allowance">$rda</td>
-        <td class="dri" title="Adequate Intake">$ai</td>
-        <td class="dri" title="tolerable Upper Intake level">$ul</td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
+  <h2><a href="contest">Diet Plan Contest</a></h2>
+  <p>Diet plans are assessed according to their composition. The closer one plan is to the recommended amounts of various nutrient contents, the higher it scores. See the best plans on the <a href="contest">contest</a> page.</p>
 
-  <h2>Participate</h2>
-  <p>Go to the <a href="http://nutrika-supeti.rhcloud.com/">Nutrika</a> site when you are ready to make your own plan.</p>
-  <p>You may handle the data you have submitted at <a href="my_plans">My Plans</a>.</p>
 
   <div class="g-plusone" data-annotation="inline" data-width="300"></div>
   <div class="fb-like" data-href="http://nutrika-supeti.rhcloud.com/" data-width="450" data-layout="standard" data-show-faces="true" data-send="true"></div>

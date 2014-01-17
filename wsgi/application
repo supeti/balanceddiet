@@ -9,40 +9,81 @@ import sys
 import urllib.parse
 from wsgiref.util import FileWrapper
 
+global data_dir
 if os.getenv("OPENSHIFT_REPO_DIR"):
     repo_dir = os.getenv("OPENSHIFT_REPO_DIR")
-    data_dir = os.getenv("OPENSHIFT_DATA_DIR")
+    site_data_dir = os.getenv("OPENSHIFT_DATA_DIR")
+    data_dir = os.path.join(repo_dir, "data")
     production_environment = True
+    contest_url = 'http://balanceddiet-supeti.rhcloud.com/'
 else:
     repo_dir = os.path.abspath(os.pardir)
+    site_data_dir = os.path.join(repo_dir, "site-data")
     data_dir = os.path.join(repo_dir, "data")
     production_environment = False
+    contest_url = 'http://localhost:8052/'
 sys.path.append(os.path.join(repo_dir, "libs"))
 
 import contest
-contest.init(data_dir)
+contest.init(site_data_dir)
+import nutrika
+nutrika.init(data_dir, contest_url + 'submit')
+import badger
+badger.init(data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
 
 class Static(object):
-  def __init__(self, path, content_type):
-    with open(os.path.join(static_dir, path), 'rb') as f:
-        data = gzip.compress(f.read())
-    self.header = [('Content-Type', content_type), 
-                   ('Content-Length', str(len(data))),
-                   ('Content-Encoding', 'gzip')]
-    self.response = [data]
+    def __init__(self, path, content_type, compress=True):
+        self.header = [('Content-Type', content_type)] 
+        with open(os.path.join(static_dir, path), 'rb') as f:
+            if compress:
+                data = gzip.compress(f.read())
+                self.header.append(('Content-Encoding', 'gzip'))
+            else:
+                data = f.read()
+        self.header.append(('Content-Length', str(len(data))))
+        self.response = [data]
 
 static_objects = {
     'main.css': Static('main.css', 'text/css'),
-    'Cherry-16.png': Static('Cherry-16.png', 'image/png'),
-    'Cherry-48.png': Static('Cherry-48.png', 'image/png'),
-    'Cherry-512.png': Static('Cherry-512.png', 'image/png'),
-    'master.html': Static('master.html', 'text/html; charset=UTF-8'),
+    'main.html': Static('main.html', 'text/html; charset=UTF-8'),
+    'Cherry-16.png': Static('Cherry-16.png', 'image/png', False),
+    'Cherry-48.png': Static('Cherry-48.png', 'image/png', False),
+    'Cherry-512.png': Static('Cherry-512.png', 'image/png', False),
+    'contest.html': Static('contest.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
     'my_plans.html': Static('my_plans.html', 'text/html; charset=UTF-8'),
     'received.html': Static('received.html', 'text/html; charset=UTF-8'),
-    'admin.html': Static('admin.html', 'text/html; charset=UTF-8')
+    'admin.html': Static('admin.html', 'text/html; charset=UTF-8'),
+    'Nutrika.css': Static('Nutrika.css', 'text/css'),
+    'Nutrika-16.png': Static('Nutrika-16.png', 'image/png', False),
+    'Nutrika-128.png': Static('Nutrika-128.png', 'image/png', False),
+    'BDE-badge.png': Static('BDE-badge.png', 'image/png', False),
+    'calculator.html': Static('calculator.html', 'text/html; charset=UTF-8'),
+    'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
+    '404.html': Static('404.html', 'text/html; charset=UTF-8')
+}
+
+class ReferenceData(object):
+    def __init__(self, data, compress=False):
+        self.header = [('Content-Type', 'application/json; charset=UTF-8')] 
+        if compress:
+            jd = gzip.compress(json.dumps(data).encode('UTF-8'))
+            self.header.append(('Content-Encoding', 'gzip'))
+        else:
+            jd = json.dumps(data).encode('UTF-8')
+        self.header.append(('Content-Length', str(len(jd))))
+        self.response = [jd]
+
+reference_objects = {
+    'nutrient_links': ReferenceData(nutrika.nutrient_links, True),
+    'foodgroups': ReferenceData(nutrika.foodgroup_dict, True),
+    'foods': ReferenceData({'foods' : nutrika.food_list,
+                            'version' : '2'}, True),
+    'badge_class': ReferenceData(badger.badge_class, True),
+    'issuer': ReferenceData(badger.issuer, True),
+    'revoked': ReferenceData(badger.revoked, True),
 }
 
 def get_list():
@@ -62,10 +103,14 @@ unauthorized_client = ('{ "result":"error", ' +
                        '"response":"Authentication of client failed." }')
 successful_submit = '{ "result":"success" }'
 empty_list = '[]'
-def application(environ, start_response):
+
+def contest_app(environ, start_response, path_info):
     ctype = 'text/plain; charset=UTF-8'
-    path_info = environ['PATH_INFO'].split('/')
-    if path_info[1] == 'json':
+    if len(path_info) == 1:
+        static = static_objects['contest.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'json':
         if path_info[2] == 'list':
             start_response('200 OK', contest.list_header)
             return contest.list_response
@@ -100,17 +145,21 @@ def application(environ, start_response):
         start_response('200 OK', contest.feed_header)
         return contest.feed_response
     elif not path_info[1]:
-        print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
-        if 'iPad' in environ['HTTP_USER_AGENT']:
-            static = static_objects['mobile.html']
-        else:
-            static = static_objects['master.html']
+        #print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
+        #if 'iPad' in environ['HTTP_USER_AGENT']:
+        #    static = static_objects['mobile.html']
+        #else:
+        static = static_objects['main.html']
         start_response('200 OK', static.header)
         return static.response
-    elif path_info[1] == 'mobile':
-        static = static_objects['mobile.html']
+    elif path_info[1] == 'contest':
+        static = static_objects['contest.html']
         start_response('200 OK', static.header)
         return static.response
+    #elif path_info[1] == 'mobile':
+    #    static = static_objects['mobile.html']
+    #    start_response('200 OK', static.header)
+    #    return static.response
     elif path_info[1] == 'my_plans':
         static = static_objects['my_plans.html']
         start_response('200 OK', static.header)
@@ -162,7 +211,144 @@ def application(environ, start_response):
         response_body = '\n'.join(['%s: %s' % (key, value)
                                    for key, value in sorted(environ.items())])
     else:
-        response_body = ''
+        static = static_objects['404.html']
+        start_response('404 Not Found', static.header)
+        return static.response
+
+    status = '200 OK'
+    response_headers = [('Content-Type', ctype), 
+                        ('Content-Length', str(len(response_body)))]
+    start_response(status, response_headers)
+    return [ response_body.encode('UTF-8') ]
+
+def calculator_app(environ, start_response, path_info):
+    ctype = 'text/plain; charset=UTF-8'
+    print('HTTP_ACCEPT_ENCODING' + '=' + environ['HTTP_ACCEPT_ENCODING'])
+    if len(path_info) == 1:
+        static = static_objects['calculator.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'json':
+        length = int(environ['CONTENT_LENGTH'])
+        request = environ['wsgi.input'].read(length).decode()
+        args = json.loads(request)
+        print(args)
+        contents = nutrika.get_contents(path_info[2], args)
+        response_body = json.dumps(contents)
+        #print(response_body)
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'ref':
+        ref = reference_objects[path_info[2]]
+        start_response('200 OK', ref.header)
+        return ref.response
+    elif not path_info[1]:
+        print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
+        if 'iPad' in environ['HTTP_USER_AGENT']:
+            static = static_objects['mobile.html']
+        else:
+            static = static_objects['master.html']
+        start_response('200 OK', static.header)
+        return static.response
+    #elif path_info[1] == 'mobile':
+    #    static = static_objects['mobile.html']
+    #    start_response('200 OK', static.header)
+    #    return static.response
+    elif path_info[1] == 'badges':
+        response_body = badger.get_badge(path_info[2])
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'badge':
+        length = int(environ['CONTENT_LENGTH'])
+        request = json.loads(environ['wsgi.input'].read(length).decode())
+        print(request)
+        response_body = badger.issue_badge(request['persona_assertion'])
+        print(response_body)
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'static':
+        static = static_objects[path_info[2]]
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'login':
+        response_body = json.dumps({'response':'OK'})
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'logout':
+        response_body = json.dumps({'response':'OK'})
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'submit':
+        length = int(environ['CONTENT_LENGTH'])
+        request = json.loads(environ['wsgi.input'].read(length).decode())
+        request['contents'] = nutrika.get_contents('plan_contents', 
+                                                   request['plan_input'])
+        request['password'] = 'b7647ea13a32fef8d9f341f921d6c69e14401133'
+        response = json.loads(nutrika.submit_plan(json.dumps(request)))
+        response['url'] = contest_url + 'my_plans'
+        response_body = json.dumps(response)
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'admin':
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'badges.xz':
+        start_response('200 OK', [('Content-type', 'application/x-xz')])
+        return FileWrapper(open(badger.backup(), "rb"))
+    elif path_info[1] == 'restore-badges':
+        length = int(environ['CONTENT_LENGTH'])
+        with open('restore.dat', 'wb') as f:
+            f.write(environ['wsgi.input'].read(length))
+        datafn = os.path.join(data_dir,'restore.xz')
+        with open('restore.dat', 'r') as f:
+            form = cgi.FieldStorage(fp=f, environ=environ)
+            with open(datafn, 'wb') as g:
+                g.write(form['archive'].value)
+        if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
+            badger.restore(datafn)
+        static = static_objects['admin.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'health':
+        response_body = "1"
+    elif path_info[1] == 'env':
+        response_body = '\n'.join(['%s: %s' % (key, value)
+                                   for key, value in sorted(environ.items())])
+    else:
+        static = static_objects['404.html']
+        start_response('404 Not Found', static.header)
+        return static.response
+
+    status = '200 OK'
+    response_headers = [('Content-Type', ctype), 
+                        ('Content-Length', str(len(response_body)))]
+    start_response(status, response_headers)
+    return [response_body.encode('UTF-8') ]
+
+def application(environ, start_response):
+    ctype = 'text/plain; charset=UTF-8'
+    path_info = environ['PATH_INFO'].split('/')
+    print('path:' + str(path_info))
+    if path_info[1] == 'contest':
+        return contest_app(environ, start_response, path_info[1:])
+    elif path_info[1] == 'calculator':
+        return calculator_app(environ, start_response, path_info[1:])
+    elif not path_info[1]:
+        #print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
+        #if 'iPad' in environ['HTTP_USER_AGENT']:
+        #    static = static_objects['mobile.html']
+        #else:
+        static = static_objects['main.html']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'static':
+        static = static_objects[path_info[2]]
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'health':
+        response_body = "1"
+    elif path_info[1] == 'env':
+        response_body = '\n'.join(['%s: %s' % (key, value)
+                                   for key, value in sorted(environ.items())])
+    else:
+        static = static_objects['404.html']
+        start_response('404 Not Found', static.header)
+        return static.response
 
     status = '200 OK'
     response_headers = [('Content-Type', ctype), 
@@ -172,7 +358,7 @@ def application(environ, start_response):
 
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
-    httpd = make_server('localhost', 8052, application)
-    #httpd = make_server('192.168.1.90', 8052, application)
+    httpd = make_server('localhost', 8051, application)
+    #httpd = make_server('192.168.1.90', 8051, application)
     httpd.serve_forever()
 

@@ -1,0 +1,6 @@
+1|Infants
+2|Children
+3|Males
+4|Females
+5|Pregnancy
+6|Lactation

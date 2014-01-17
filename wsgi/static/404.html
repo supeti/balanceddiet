@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Balanced Diet Contest</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="shortcut icon" href="/static/Cherry-16.png" type="image/png">
+  <link rel="stylesheet" type="text/css" href="/static/main.css">
+  <link rel='stylesheet' type='text/css' href='http://fonts.googleapis.com/css?family=Berkshire+Swash|Tienne:700|Istok+Web:400,400italic,700,700italic'>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>
+
+var receive_records_list = function(data) {
+  var records = $("#records");
+  records.html("");
+  $.each(data, function(i, item) {
+    var record = $("#record_template").html().replace("$score", item.score).replace("$title", item.title);
+    var user = item.user;
+    record = record.replace("$url", user.url);
+    image = "<img src=" + user.image + ">";
+    record = record.replace("$displayName", image + user.displayName);
+    record = record.split("$rid").join(item.rid);
+    records.append(record);
+    $("#" + item.rid + ".hide_record_button").hide();
+  });
+};
+
+$(function() {
+  $.get("json/list", receive_records_list);
+  if(typeof(Storage) !== "undefined") {
+  }
+  else {
+    alert("Attention! Your browser does not support HTML5 web storage.\nWeb storage is supported in Internet Explorer 8+, Firefox, Opera, Chrome, and Safari.");
+  }
+});
+
+function build_contents(data) {
+  var contents = $("#" + data.rid + ".contents");
+  contents.html("");
+  var head="", body="", title="";
+  var head_tmpl = $("#contents_head_template").html();
+  var body_tmpl = $("#contents_body_template").html();
+  $.each(data.contents.contents, function(i, item) {
+      title = item.title;
+      contents.append(head_tmpl.replace("$cols", "7").replace("$title", title));
+      body = "<tbody>";
+      $.each(item.data, function(i, item) {
+        if (item.amount != "N/A") {
+          row = body_tmpl.replace("$amount", item.amount).replace("$unit", item.unit);
+          row = row.replace("$description", item.desc);
+          row = row.replace("$ear", item.ear).replace("$rda", item.rda);
+          row = row.replace("$ai", item.ai).replace("$ul", item.ul);
+          body += row;
+        }
+      });
+      contents.append(body + "</tbody>");
+  });
+};
+
+var lsg = { 1:"infants", 2:"children", 3:"males", 4:"females", 5:"pregnant females", 6:"lactating females"};
+var records = new Object();
+var receive_record = function(data) {
+  records[data.rid] = data;
+  var product_list = "";
+  $.each(data.plan_input.plan.products, function(i, product) {
+    product_list += "<li>" + product.quantity + " " + product.name + "<ul>";
+    $.each(product.ingredients, function(j, ingredient) {
+      product_list += "<li>" + ingredient.amount + "g " + ingredient.ndbno + " " + ingredient.desc;
+    });
+    product_list += "</ul>";
+  });
+  var record = $("#plan_header_template").html().replace("$product_list", product_list);
+  p = data.plan_input;
+  record = record.replace("$days", p.plan.days).replace("$weight", p.weight).replace("$age", p.age);
+  record = record.replace("$lsg", lsg[p.lsg]).replace("$rid", data.rid);
+  $("#" + data.rid + ".record_details").html(record);
+  $("#" + data.rid + ".show_record_button").hide();
+  $("#" + data.rid + ".hide_record_button").show();
+  $("#" + data.rid + ".record_details").show();
+  build_contents(data);
+};
+
+function show_record(rid) {
+  if (!records[rid]) $.get("json/record/" + rid, receive_record);
+  else {
+    $("#" + rid + ".show_record_button").hide();
+    $("#" + rid + ".hide_record_button").show();
+    $("#" + rid + ".record_details").show();
+  }
+}
+
+function hide_record(rid) {
+  $("#" + rid + ".show_record_button").show();
+  $("#" + rid + ".hide_record_button").hide();
+  $("#" + rid + ".record_details").hide();
+}
+
+function export_plan(rid) {
+  var d = new Date();
+  ds = d.toISOString().split("T")[0] + "_" + d.toLocaleTimeString();
+  var MIME_TYPE = "text/json";
+  var bb = new Blob([JSON.stringify(records[rid].plan_input.plan)], {type: MIME_TYPE});
+  var a = document.getElementById("export_plan_link");
+  a.download = "plan-" + rid + "." + ds + ".json";
+  a.href = window.URL.createObjectURL(bb);
+  a.textContent = "Download";
+  a.dataset.downloadurl = [MIME_TYPE, a.download, a.href].join(":");
+  a.click();
+}
+
+</script>
+</head>
+
+
+<body>
+
+  <h1>Balanced Diet Contest</h1>
+  <a href='/'>Home</a>
+  <a href='/calculator'>Calculator</a>
+  
+  <h2>404 Not found</h2>
+  <p>There is no resource available at this URL.</p>
+
+  <div class="g-plusone" data-annotation="inline" data-width="300"></div>
+  <div class="fb-like" data-href="http://nutrika-supeti.rhcloud.com/" data-width="450" data-layout="standard" data-show-faces="true" data-send="true"></div>
+  <script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44113537-2', 'ecc-supeti.rhcloud.com');
+  ga('send', 'pageview');
+  </script>
+</body>
+</html>
+

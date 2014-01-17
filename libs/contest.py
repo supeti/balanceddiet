@@ -47,7 +47,7 @@ body = """<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Balanced Diet Contest</title>
     <subtitle>Recent Changes</subtitle>
-    <link href="%(site)s/feed" rel="self" />
+    <link href="%(site)s/contest/feed" rel="self" />
     <link href="%(site)s" />
     <id>%(site)s</id>
     <updated>%(updated)s</updated>

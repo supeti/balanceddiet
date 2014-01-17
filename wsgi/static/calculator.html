@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Balanced Diet Nutrient Calculator - the most advanced Computer Aided Diet application</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <link rel="shortcut icon" href="/static/Nutrika-16.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="/static/Nutrika.css">
+    <link rel='stylesheet' type='text/css' href='http://fonts.googleapis.com/css?family=Berkshire+Swash|Tienne:700|Istok+Web:400,400italic,700,700italic'>
+    <script src="https://apis.google.com/js/client.js?onload=load"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://login.persona.org/include.js"></script>
+    <script src="https://beta.openbadges.org/issuer.js"></script>
+<script>
+
+function helpOff() {
+  $(".help").hide();
+  $(".tutorial").hide();
+  localStorage.help = "off";
+}
+
+function helpOn() {
+  $(".help").show();
+  $(".tutorial").hide();
+  localStorage.help = "on";
+}
+
+function helpTutorial() {
+  $(".help").show();
+  $(".tutorial").show();
+  localStorage.help = "tutorial";
+}
+
+var plan = new Object();
+plan.products = new Object();
+var ingredients = new Object();
+
+$(document).ajaxError(function(event,xhr,options,exc){
+  alert(exc + "\n" + xhr.responseText + ": URL=\""
+        + options.url + "\" data=" + options.data);
+});
+
+$.ajaxSetup({contentType: "application/json; charset=UTF-8", dataType: "json",});
+
+function lsg_changed() {
+  localStorage.lsg = $("#lsg").val();
+  switch(localStorage.lsg) {
+  case "1":
+    $("#ageunit").html("months");
+    $("#age").val(0);
+    localStorage.age = "0";
+    $("#weight").val(5);
+    localStorage.weight = "5";
+    break;
+  case "2":
+    $("#ageunit").html("years");
+    $("#age").val(1);
+    localStorage.age = "1";
+    $("#weight").val(25);
+    localStorage.weight = "25";
+    break;
+  case "3":
+  case "4":
+    $("#ageunit").html("years");
+    $("#age").val(9);
+    localStorage.age = "9";
+    $("#weight").val(50);
+    localStorage.weight = "50";
+    break;
+  case "5":
+  case "6":
+    $("#ageunit").html("years");
+    $("#age").val(14);
+    localStorage.age = "14";
+    $("#weight").val(50);
+    localStorage.weight = "50";
+    break;
+  }
+}
+
+function get_age() {
+  if (1 == localStorage.lsg) return localStorage.age / 12;
+  else return localStorage.age;
+}
+
+function age_changed() {
+  age = $("#age").val();
+  switch(localStorage.lsg) {
+  case "1":
+    if (0 <= age && age < 12) localStorage.age = age;
+    else {
+      localStorage.age = "0";
+      $("#age").val(localStorage.age);
+      alert("Attention!\nAge should be between 0 and 11 months for infants.");
+    }
+    break;
+  case "2":
+    if (1 <= age && age < 9) localStorage.age = age;
+    else {
+      localStorage.age = "1";
+      $("#age").val(localStorage.age);
+      alert("Attention!\nAge should be between 1 and 8 years for children.");
+    }
+    break;
+  case "3":
+  case "4":
+    if (9 <= age && age < 200) localStorage.age = age;
+    else {
+      localStorage.age = "9";
+      $("#age").val(localStorage.age);
+      alert("Attention!\nAge should be at least 9 years for males and females.");
+    }
+    break;
+  case "5":
+  case "6":
+    if (14 <= age && age < 51) localStorage.age = age;
+    else {
+      localStorage.age = "14";
+      $("#age").val(localStorage.age);
+      alert("Attention!\nAge should be between 14 and 50 years for pregnancy and lactation.");
+    }
+    break;
+  }
+}
+
+function weight_changed() {
+  weight = $("#weight").val();
+  age = $("#age").val();
+  switch(localStorage.lsg) {
+  case "1":
+    if (1 <= weight && weight < 15) localStorage.weight = weight;
+    else {
+      localStorage.weight = "5";
+      $("#weight").val(localStorage.weight);
+      alert("Attention!\nWeight should be between 1 and 15 kg for infants.");
+    }
+    break;
+  case "2":
+    if (5 <= weight && weight < 60) localStorage.weight = weight;
+    else {
+      localStorage.weight = "25";
+      $("#weight").val(localStorage.weight);
+      alert("Attention!\nWeight should be between 5 and 60 kg for children.");
+    }
+    break;
+  case "3":
+  case "4":
+    if (20 <= weight && weight < 300) localStorage.weight = weight;
+    else {
+      localStorage.weight = "50";
+      $("#weight").val(localStorage.weight);
+      alert("Attention!\nWeight should be at least 20 kg for males and females.");
+    }
+    break;
+  case "5":
+  case "6":
+    if (35 <= weight && weight < 300) localStorage.weight = weight;
+    else {
+      localStorage.weight = "50";
+      $("#weight").val(localStorage.weight);
+      alert("Attention!\nWeight should be at least 35 kg for pregnancy and lactation.");
+    }
+    break;
+  }
+}
+
+function change_setting_checkbox(checkboxid, lskey) {
+  localStorage[lskey] = $(checkboxid).is(":checked");
+}
+
+function select_food_description() {
+  localStorage.ndbno = $("#food_descriptions").val();
+  $("#ndbno").val(localStorage.ndbno);
+}
+
+function select_NDBNo() {
+  localStorage.ndbno = $("#ndbno").val();
+  $("#food_descriptions").val(localStorage.ndbno);
+}
+
+function restore_food_info() {
+  $("#ndbno").val(localStorage.ndbno);
+  $("#food_descriptions").val(localStorage.ndbno);
+}
+
+var nutrient_links;
+function get_nutrient_links() {
+  $.get("calculator/ref/nutrient_links", function(data) {
+    nutrient_links = data;
+    localStorage.nutrient_links = JSON.stringify(data);
+    localStorage.nutrient_links_ver = nutrient_links["version"];
+  });
+}
+
+var foodgroups;
+function get_foodgroups() {
+  $.get("calculator/ref/foodgroups", function(data) {
+    foodgroups = data;
+    localStorage.foodgroups = JSON.stringify(data);
+    localStorage.foodgroups_ver = data.version;
+  });
+}
+
+var food_name_map = new Object();
+
+function restore_food_list() {
+  $("#food_names").html(localStorage.food_names);
+  $("#food_descriptions").html(localStorage.food_descriptions);
+  food_name_map = JSON.parse(localStorage.food_name_map);
+}
+
+function build_food_list(foods) {
+  datalist_support = 'id' in document.createElement('datalist');
+  $.each(foods, function(i, item) {
+    var ndb_no = item[0];
+    var group = item[1];
+    var food_desc = item[2];
+    if (datalist_support)
+      $("#food_names").append("<option class='food_desc' id='" + ndb_no + "' value='" + ndb_no + "'>" + food_desc + "</option>");
+    optgroup = $("optgroup#" + group + ".group");
+    var option = "<option value='" + ndb_no + "'>" + food_desc + "</option>";
+    if (optgroup.is("optgroup")) {
+      optgroup.append(option);
+    } else {
+      $("#food_descriptions").append("<optgroup class='group' id='" + group + "' label='" + foodgroups[group] + "'>" + option + "</optgroup>");
+    }
+    food_name_map[ndb_no] = food_desc;
+  });
+  localStorage.food_name_map = JSON.stringify(food_name_map);
+  localStorage.food_names = $("#food_names").html();
+  localStorage.food_descriptions = $("#food_descriptions").html();
+}
+
+function get_foods() {
+  $.get("calculator/ref/foods", function(data) {
+    build_food_list(data.foods);
+    localStorage.foods_ver = data.version;
+  });
+}
+
+var receive_food_contents = function(data) {
+  var contents = $("#food_contents");
+  contents.html("");
+  var head="", body="", title="";
+  var caption_tmpl = $("#contents_caption_template").html();
+  var description = $("#food_descriptions>optgroup>option:selected").text();
+  contents.append(caption_tmpl.replace("$description", description));
+  var head_tmpl = $("#contents_head_template").html();
+  var body_tmpl = $("#contents_body_template").html();
+  $.each(data.contents, function(i, item) {
+    if ($("#" + item.title.replace(" ", "") + ".appearance").is(":checked")) {
+      if (item.title in nutrient_links) {
+        title = nutrient_links[item.title];
+      } else {
+        title = item.title;
+      }
+      contents.append(head_tmpl.replace("$cols", "7").replace("$title", title));
+      body = "<tbody>";
+      $.each(item.data, function(i, item) {
+        if (item.amount != "N/A" || $("#NA.appearance").is(":checked")) {
+          row = body_tmpl.replace("$amount", item.amount).replace("$unit", item.unit);
+          if (item.desc in nutrient_links) {
+            link = nutrient_links[item.desc];
+          } else {
+            link = item.desc;
+          }
+          row = row.replace("$description", link);
+          row = row.replace("$ear", item.ear).replace("$rda", item.rda);
+          row = row.replace("$ai", item.ai).replace("$ul", item.ul);
+          body += row;
+        }
+      });
+      contents.append(body + "</tbody>");
+    }
+  });
+};
+
+function update_food_contents() {
+  if (typeof(food_name_map[localStorage.ndbno]) != "undefined") {
+    var data = JSON.stringify({
+        lsg: localStorage.lsg,
+        age: get_age(),
+        weight: localStorage.weight,
+        ndbno: localStorage.ndbno
+        });
+    $.post("calculator/json/food_contents", data, receive_food_contents);
+  } else {
+    alert("Choose food first.");
+  }
+}
+
+function hide_food_contents() {
+  $("#food_contents").hide();
+  $("#show_food_button").show();
+  $("#hide_food_button").hide();
+  $("#update_food_button").hide();
+}
+
+function show_food_contents() {
+  update_food_contents();
+  $("#show_food_button").hide();
+  $("#hide_food_button").show();
+  $("#update_food_button").show();
+  $("#food_contents").show();
+}
+
+function load_ingredient(from) {
+  add_ingredient(product_count, false);
+  var ingredient = ingredients[ingredient_count];
+  ingredient.amount = from.amount;
+  $("#" + ingredient.id + ".amount").val(ingredient.amount);
+  ingredient.ndbno = from.ndbno;
+  $("#" + ingredient.id + ".ndbno").val(ingredient.ndbno);
+  $("#" + ingredient.id + ".ingdesc").text(food_name_map[ingredient.ndbno]);
+}
+
+function load_product(from) {
+  add_product(false);
+  var product = plan.products[product_count];
+  product.name = from.name;
+  $("#" + product.id + ".product_name").val(product.name);
+  $("#" + product.id + ".plan_item_name").text(product.name);
+  product.price = from.price;
+  $("#" + product.id + ".product_price").val(product.price);
+  product.quantity = from.quantity;
+  $("#" + product.id + ".quantity").val(product.quantity);
+  for (var i in from.ingredients) {
+    load_ingredient(from.ingredients[i]);
+  }
+}
+
+function load_plan(from) {
+  plan.days = from.days;
+  $("#plan_length").val(plan.days);
+  for (var product_id in from.products) {
+    load_product(from.products[product_id]);
+  }
+}
+
+function store_settings() {
+  localStorage.lsg = $("#lsg").val();
+  localStorage.age = $("#age").val();
+  localStorage.weight = $("#weight").val();
+  localStorage.proximates = $("#Proximates.appearance").is(":checked");
+  localStorage.minerals = $("#Minerals.appearance").is("checked");
+  localStorage.vitamins = $("#Vitamins.appearance").is("checked");
+  localStorage.lipids = $("#Lipids.appearance").is("checked");
+  localStorage.aminoacids = $("#AminoAcids.appearance").is("checked");
+  localStorage.others = $("#Others.appearance").is("checked");
+  localStorage.na = $("#NA.appearance").is("checked");
+  localStorage.settings = "set";
+}
+
+function restore_settings() {
+  $("#lsg").val(localStorage.lsg);
+  $("#age").val(localStorage.age);
+  $("#weight").val(localStorage.weight);
+  $("#lsg").val(localStorage.lsg);
+  $("#age").val(localStorage.age);
+  $("#weight").val(localStorage.weight);
+  $("#Proximates.appearance").prop("checked", "true"==localStorage.proximates);
+  $("#Minerals.appearance").prop("checked", "true"==localStorage.minerals);
+  $("#Vitamins.appearance").prop("checked", "true"==localStorage.vitamins);
+  $("#Lipids.appearance").prop("checked", "true"==localStorage.lipids);
+  $("#AminoAcids.appearance").prop("checked", "true"==localStorage.aminoacids);
+  $("#Others.appearance").prop("checked", "true"==localStorage.others);
+  $('#NA.appearance').prop('checked', "true"==localStorage.na);
+}
+
+$(function() {
+  if (!('id' in document.createElement('datalist')))
+    alert("Attention!\nUnfortunatelly your browser is not good\nenough for this site. You should use a\nbrowser that supports HTML5 datalist tags.\n For example: Chrome,\nFirefox, or Opera.");
+  $("#food_contents").hide();
+  $("#show_food_button").show();
+  $("#hide_food_button").hide();
+  $("#update_food_button").hide();
+  $(".hide_plan_contents_button").hide();
+  $(".update_plan_contents_button").hide();
+  if(typeof(Storage) !== "undefined") {
+    if ("off" == localStorage.help) {
+      helpOff();
+      $("#help_off").attr('checked', true);
+    } else if ("tutorial" == localStorage.help) {
+      helpTutorial();
+      $("#help_tutorial").attr('checked', true);
+    } else {
+      helpOn();
+      $("#help_on").attr('checked', true);
+    }
+    if ("set" == localStorage.settings) {
+      restore_settings();
+    } else {
+      store_settings();
+    }
+    if ("2" == localStorage.nutrient_links_ver) {
+        nutrient_links = JSON.parse(localStorage.nutrient_links);
+    } else {
+        get_nutrient_links();
+    }
+    if ("2" == localStorage.foodgroups_ver) {
+        foodgroups = JSON.parse(localStorage.foodgroups);
+    } else {
+        get_foodgroups();
+    }
+    if ("2" == localStorage.foods_ver) {
+        restore_food_list();
+    } else {
+        get_foods();
+    }
+    if (localStorage.plan) {
+      load_plan(JSON.parse(localStorage.plan));
+    } else {
+      plan.days = $("#plan_length").val();
+      localStorage.plan = JSON.stringify(plan);
+    }
+    restore_food_info();
+  }
+  else {
+    alert("Attention! Your browser does not support HTML5 web storage.\nWeb storage is supported in Internet Explorer 8+, Firefox, Opera, Chrome, and Safari.");
+  }
+});
+
+var product_count = 0;
+var ingredient_count = 0;
+
+function add_product(storing) {
+  var product_id = ++product_count;
+  var product = $("#product_template").html();
+  product = product.split("$product_id").join(product_id);
+  product = product.split("$product_name").join("Product " + product_id);
+  $("#product_list").append(product);
+  plan_item = $("#plan_item_template").html();
+  plan_item = plan_item.split("$product_id").join(product_id);
+  plan_item = plan_item.split("$product_name").join("Product " + product_id);
+  $("#plan_list").append(plan_item);
+  $("#" + product_id + ".update_product_contents_button").hide();
+  $("#" + product_id + ".hide_product_contents_button").hide();
+  plan.products[product_id] = new Object();
+  plan.products[product_id].id = product_id;
+  plan.products[product_id].name = $("#" + product_id + ".product_name").val();
+  plan.products[product_id].price = $("#" + product_id + ".product_price").val();
+  plan.products[product_id].quantity = $("#" + product_id + ".quantity").val();
+  plan.products[product_id].ingredients = new Object();
+  if (storing) { localStorage.plan = JSON.stringify(plan); }
+}
+
+function delete_all_products() {
+  $("#product_list>li").remove();
+  $("#plan_list>tr").remove();
+  delete plan.products;
+  plan.products = new Object();
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function delete_selected_products() {
+  $("input:checkbox:checked.selected_product").each(function(){
+    product_id = $(this).val();
+    delete plan.products[product_id];
+    $("#" + product_id + ".plan_item").remove();
+    $(this).parent().remove();
+  });
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function change_product_price(product_id) {
+  price = $("#" + product_id + ".product_price").val();
+  if (0<price && price<=100000000) {
+    plan.products[product_id].price = $("#" + product_id + ".product_price").val();
+    localStorage.plan = JSON.stringify(plan);
+  }
+  else {
+    alert("Attention!\nProduct price should be a positive number.");
+    plan.products[product_id].price = 1;
+    $("#" + product_id + ".product_price").val(1);
+    localStorage.plan = JSON.stringify(plan);
+  }
+}
+
+function enter_product_name(product_id) {
+  var name = $("#" + product_id + ".product_name").val();
+  $("#" + product_id + ".plan_item_name").text(name);
+  plan.products[product_id].name = name;
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function add_ingredient(product_id, storing) {
+  var ingredient_id = ++ingredient_count;
+  var ingredient = $("#ingredient_template tbody").html();
+  ingredient = ingredient.split("$ingredient_id").join(ingredient_id);
+  $("#product_list>#" + product_id + " tbody").append(ingredient);
+  plan.products[product_id].ingredients[ingredient_id] = new Object();
+  plan.products[product_id].ingredients[ingredient_id].amount = "100";
+  plan.products[product_id].ingredients[ingredient_id].id = ingredient_id;
+  ingredients[ingredient_id] = plan.products[product_id].ingredients[ingredient_id];
+  if (storing) { localStorage.plan = JSON.stringify(plan); }
+}
+
+function delete_ingredient(product_id) {
+  $("input:checkbox:checked.selected_ingredient").each(function(){
+    var ingredient_id = $(this).val();
+    delete ingredients[ingredient_id];
+    delete plan.products[product_id].ingredients[ingredient_id];
+    $(this).parent().parent().remove();
+  });
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function update_ingredient(ingredient_id) {
+  var ndbno = $("#" + ingredient_id + ".ndbno").val();
+  $("#" + ingredient_id + ".ingdesc").text(food_name_map[ndbno]);
+  ingredients[ingredient_id].ndbno = ndbno;
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function change_ingredient_amount(ingredient_id) {
+  amount = $("#" + ingredient_id + ".amount").val();
+  if (0<amount && amount<=100000000) {
+    ingredients[ingredient_id].amount = amount;
+    localStorage.plan = JSON.stringify(plan);
+  } else {
+    alert("Attention!\nIngredient amount should be a positive number.");
+    ingredients[ingredient_id].amount = 100;
+    $("#" + ingredient_id + ".amount").val(100);
+    localStorage.plan = JSON.stringify(plan);
+  }
+}
+
+function show_product_contents(product_id) {
+  update_product_contents(product_id);
+  $("#" + product_id + ".show_product_contents_button").hide();
+  $("#" + product_id + ".hide_product_contents_button").show();
+  $("#" + product_id + ".update_product_contents_button").show();
+  $("#" + product_id + ".product_contents").show();
+}
+
+function hide_product_contents(product_id) {
+  $("#" + product_id + ".show_product_contents_button").show();
+  $("#" + product_id + ".hide_product_contents_button").hide();
+  $("#" + product_id + ".update_product_contents_button").hide();
+  $("#" + product_id + ".product_contents").hide();
+}
+
+var receive_product_contents = function(data) {
+  var product_contents = $("#" + data.product_id + ".product_contents");
+  product_contents.html("");
+  var head = "", body = "", title="";
+  product_contents.append("<caption>best P/V: " + data.bpv + ", worst P/V: " + data.wpv + ", score: " + data.score + "</caption>");
+  $.each(data.contents, function(i, item) {
+    if ($("#" + item.title.replace(" ", "") + ".appearance").is(":checked")) {
+      head = $("#pv_contents_head_template").html();
+      if (item.title in nutrient_links) {
+        title = nutrient_links[item.title];
+      } else {
+        title = item.title;
+      }
+      head = head.replace("$cols", "7").replace("$title", title);
+      product_contents.append(head);
+      $.each(item.data, function(i, item) {
+        if (item.amount != "N/A" || $("#NA.appearance").is(":checked")) {
+          body = $("#pv_contents_body_template").html();
+          body = body.replace("$amount", item.amount).replace("$unit", item.unit);
+          if (item.desc in nutrient_links) {
+            body = body.replace("$description", nutrient_links[item.desc]);
+          } else {
+            body = body.replace("$description", item.desc);
+          }
+          body = body.replace("$ear", item.ear).replace("$rda", item.rda);
+          body = body.replace("$ai", item.ai).replace("$ul", item.ul);
+          body = body.replace("$pv", item.pv);
+          product_contents.append(body);
+        }
+      });
+    }
+  });
+  product_contents.show();
+};
+
+function update_product_contents(product_id) {
+  var data = JSON.stringify({
+      lsg: localStorage.lsg,
+      age: get_age(),
+      weight: localStorage.weight,
+      "product": plan.products[product_id]
+      });
+  $.post("calculator/json/product_contents", data, receive_product_contents);
+}
+
+function change_plan_length() {
+  plan.days = $("#plan_length").val();
+  localStorage.plan = JSON.stringify(plan);
+}
+
+function change_plan_quantity(product_id) {
+  quantity = $("#" + product_id + ".quantity").val();
+  if (0<quantity && quantity<=100000000) {
+    plan.products[product_id].quantity = quantity;
+    localStorage.plan = JSON.stringify(plan);
+  } else {
+    alert("Attention!\nIngredient amount should be a positive number.");
+    plan.products[product_id].quantity = 1;
+    $("#" + product_id + ".quantity").val(1);
+    localStorage.plan = JSON.stringify(plan);
+  }
+}
+
+function show_plan_contents() {
+  update_plan_contents();
+  $(".show_plan_contents_button").hide();
+  $(".hide_plan_contents_button").show();
+  $(".update_plan_contents_button").show();
+  $("#plan_contents").show();
+}
+
+function hide_plan_contents() {
+  $(".show_plan_contents_button").show();
+  $(".hide_plan_contents_button").hide();
+  $(".update_plan_contents_button").hide();
+  $("#plan_contents").hide();
+}
+
+var plan_bpv;
+var plan_score;
+var receive_plan_contents = function(data) {
+  var plan_contents = $("#plan_contents");
+  plan_contents.html("");
+  var head = "", body = "", title="";
+  plan_score = data.score;
+  plan_bpv = data.bpv;
+  plan_contents.append("<caption>best P/V: " + data.bpv + ", worst P/V: " + data.wpv + ", score: " + data.score + "</caption>");
+  $.each(data.contents, function(i, item) {
+    if ($("#" + item.title.replace(" ", "") + ".appearance").is(":checked")) {
+      head = $("#pv_contents_head_template").html();
+      if (item.title in nutrient_links) {
+        title = nutrient_links[item.title];
+      } else {
+        title = item.title;
+      }
+      head = head.replace("$cols", "7").replace("$title", title);
+      plan_contents.append(head);
+      $.each(item.data, function(i, item) {
+        if (item.amount != "N/A" || $("#NA.appearance").is(":checked")) {
+          body = $("#pv_contents_body_template").html();
+          body = body.replace("$amount", item.amount).replace("$unit", item.unit);
+          if (item.desc in nutrient_links) {
+            body = body.replace("$description", nutrient_links[item.desc]);
+          } else {
+            body = body.replace("$description", item.desc);
+          }
+          body = body.replace("$ear", item.ear).replace("$rda", item.rda);
+          body = body.replace("$ai", item.ai).replace("$ul", item.ul);
+          body = body.replace("$pv", item.pv);
+          plan_contents.append(body);
+        }
+      });
+    }
+  });
+  plan_contents.show();
+};
+
+function get_plan_input(submit) {
+  var plan = new Object();
+  plan.days = $("#plan_length").val();
+  plan.products = new Array();
+  var j = 0;
+  $($("#product_list input.selected_product")).each(function() {
+    var product_id = $(this).val();
+    var product = new Object();
+    if (submit) product.name = $("#" + product_id + ".product_name").val();
+    product.price = $("#" + product_id + ".product_price").val();
+    product.quantity = $("#" + product_id + ".quantity").val();
+    product.ingredients = new Array();
+    var i = 0;
+    $($("#" + product_id + ".ingredients>tr")).each(function() {
+      var ingredient = new Object();
+      ingredient.amount = $(this).find(".amount").val();
+      ingredient.ndbno = $(this).find(".ndbno").val();
+      if (submit) ingredient.desc = $(this).find(".ingdesc").text();
+      product.ingredients[i++] = ingredient;
+    });
+    plan.products[j++] = product;
+  });
+  return plan;
+}
+
+function update_plan_contents() {
+  var data = JSON.stringify({
+      lsg: localStorage.lsg,
+      age: get_age(),
+      weight: localStorage.weight,
+      "plan": get_plan_input(false)
+  });
+  $.post("calculator/json/plan_contents", data, receive_plan_contents);
+}
+
+function export_plan() {
+  var d = new Date();
+  ds = d.toISOString().split("T")[0] + "_" + d.toLocaleTimeString();
+  var MIME_TYPE = "text/json";
+  var bb = new Blob([JSON.stringify(plan)], {type: MIME_TYPE});
+  var a = document.getElementById("export_plan_link");
+  a.download = "plan-" + ds + ".json";
+  a.href = window.URL.createObjectURL(bb);
+  a.textContent = "Download";
+  a.dataset.downloadurl = [MIME_TYPE, a.download, a.href].join(":");
+  a.click();
+}
+
+function import_plan() {
+  var f = document.getElementById("import_plan_input").files[0];
+  if (f) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      var contents = e.target.result;
+      load_plan(JSON.parse(contents));
+      localStorage.plan = JSON.stringify(plan);
+    }
+    r.readAsText(f);
+  } else {
+    alert("Failed to load file " + f);
+  }
+}
+
+var user = new Object();
+function signinCallback(authResult) {
+  gapi.client.load('plus','v1', function(){
+    if (authResult['access_token']) {
+      user.access_token = authResult['access_token'];
+      $('#login').hide();
+      gapi.client.plus.people.get({'userId' : 'me'}).execute(function(resp) {
+        user.image = resp.image.url;
+        user.url = resp.url;
+        user.displayName = resp.displayName;
+        user.id = resp.id;
+        var text = "<a href='" + resp.url + "'>";
+        if (resp.image.url) {
+          text += "<img src='" + resp.image.url + "'>";
+        }
+        text += resp.displayName + "</a>";
+        $('#cooklink').html(text);
+      });
+      $("#profile").show();
+    } else if (authResult['error']) {
+      alert('Sign-in state: ' + authResult['error']);
+    }
+  });
+}
+
+var return_submit = function(data) {
+  if ("success" == data.result) {
+    window.location.assign(data.url);
+  } else {
+    alert("Error!\n" + data.response);
+  }
+}
+
+function submit() {
+  var content = {
+      lsg: localStorage.lsg,
+      age: get_age(),
+      weight: localStorage.weight,
+      "plan": get_plan_input(true)
+  };
+  var data = JSON.stringify({
+      plan_input: content,
+      title: $("#plan_title").val(),
+      comments: $("#plan_comments").val(),
+      user: user
+  });
+  $.post("calculator/submit", data, return_submit);
+}
+
+function wrong_answer(variable, value, message) {
+  if (value != variable) {
+    alert(message);
+    return true;
+  }
+  return false;
+}
+
+function undefined_answer(variable, message) {
+  if (typeof(variable) == "undefined") {
+    alert(message);
+    return true;
+  }
+  return false;
+}
+
+function find_product(name) {
+  for (var i in plan.products)
+    if (name == plan.products[i].name)
+      return plan.products[i];
+}
+
+function find_ingredient(product, ndbno) {
+  for (var i in product.ingredients)
+    if (ndbno == product.ingredients[i].ndbno)
+      return product.ingredients[i];
+}
+
+var persona_assertion;
+function persona_login() {
+  navigator.id.watch({
+    onlogin: function(assertion) {
+      persona_assertion = assertion;
+      var data = JSON.stringify({persona_assertion: assertion});
+      $.post("calculator/badge", data, return_badge);
+    },
+    onlogout: function() {
+      delete window.persona_assertion;
+    }
+  });
+  navigator.id.request();
+//  alert("Press OK to log out.");
+//  navigator.id.logout();
+}
+
+var return_badge = function(data) {
+  if ("new" == data.result) {
+    alert("Congratulations! badge_url:" + data.badge_url)
+//    OpenBadges.connect({ callback: data.badge_callback, scope: ['issue'] });
+    //data.badge_url
+  } else if ("old" == data.result) {
+    alert("You have a badge already. badge_url:" + data.badge_url)
+    //data.badge_url
+  } else {
+    alert("Error!\n" + JSON.stringify(data));
+  }
+  navigator.id.logout();
+}
+
+function badge() {
+  var product;
+  var ingredient;
+  if (wrong_answer(localStorage.lsg, "3", "Life Stage Group should be 'Males (9+ years)'!")) return;
+  if (wrong_answer(localStorage.age, "27", "Age should be '27'!")) return;
+  if (wrong_answer(localStorage.weight, "81", "Weight should be '81'!")) return;
+  if (wrong_answer(localStorage.ndbno, "09040", 
+                   "The selected food item under Food Contents should be 09040 Bananas, raw.")) return;
+  product = find_product("oranges 1kg");
+  if (undefined_answer(product, "There should be a product called 'oranges 1kg'.")) return;
+  if (wrong_answer(product.name, "oranges 1kg", "There should be a product called 'oranges 1kg'.")) return;
+  if (wrong_answer(product.price, "3.31", "The price of the product called 'oranges 1kg' should be '3.31'.")) return;
+  if (wrong_answer(product.quantity, "2", "In the plan, the quantity of the product called 'oranges 1kg' should be '2'.")) return;
+  ingredient = find_ingredient(product, "09200");
+  if (undefined_answer(ingredient, "The product called 'oranges 1kg' should have an ingredient with NDBNo. '09200'.")) return;
+  if (wrong_answer(ingredient.ndbno, "09200",
+      "The product called 'oranges 1kg' should have an ingredient with NDBNo. '09200'.")) return;
+  if (wrong_answer(ingredient.amount, "1000", 
+      "The product called 'oranges 1kg' should have an ingredient of '1000' grams with NDBNo. '09200'.")) return;
+  product = find_product("rice&beans");
+  if (undefined_answer(product, "There should be a product called 'rice&beans'.")) return;
+  if (wrong_answer(product.name, "rice&beans", "There should be a product called 'rice&beans'")) return;
+  if (wrong_answer(product.price, "0.45", "The price of the product called 'rice&beans' should be '0.45'.")) return;
+  if (wrong_answer(product.quantity, "3", "In the plan, the quantity of the product called 'rice&beans' should be '3'.")) return;
+  ingredient = find_ingredient(product, "20444");
+  if (undefined_answer(ingredient, "The product called 'rice&beans' should have an ingredient with NDBNo. '20444'.")) return;
+  if (wrong_answer(ingredient.ndbno, "20444", 
+      "The product called 'rice&beans' should have an ingredient with NDBNo. '20444'.")) return;
+  if (wrong_answer(ingredient.amount, "100", 
+      "The product called 'rice&beans' should have an ingredient of '100' grams with NDBNo. '20444'.")) return;
+  ingredient = find_ingredient(product, "16049");
+  if (undefined_answer(ingredient, "The product called 'rice&beans' should have an ingredient with NDBNo. '16049'.")) return;
+  if (wrong_answer(ingredient.ndbno, "16049", 
+      "The product called 'rice&beans' should have an ingredient with NDBNo. '16049'.")) return;
+  if (wrong_answer(ingredient.amount, "100", 
+      "The product called 'rice&beans' should have an ingredient of '100' grams with NDBNo. '16049'.")) return;
+  if (wrong_answer(plan_score, $("#cert_plan_score").val(), 
+      "You have to copy the plan score into the first input line in the last checkpoint.")) return;
+  if (wrong_answer(plan_bpv, $("#cert_plan_best_pv").val(), 
+      "You have to copy the plan best P/V ratio into the second input line in the last checkpoint.")) return;
+  alert("Congratulations! You have earned the Balanced Diet Expert badge. Press OK, and follow the instructions.")
+  persona_login();
+}
+
+</script>
+</head>
+
+
+<body>
+
+  <h1>Balanced Diet Nutrient Calculator</h1>
+  <a href='/'>Home</a>
+  <a href='/contest'>Contest</a>
+
+  <h2>Attention!</h2>
+
+  <p>This site is almost ready. It is in testing phase now. Comments are welcome at the <a href="https://plus.google.com/u/0/communities/109090700324297247020">Nutrika Testers Community</a>. News are available at <a href="https://plus.google.com/u/0/b/115246712679610323032/115246712679610323032/posts">Nutrika Page</a></p>
+
+  <p class="help">This is a Computer Aided Diet application. The purpose of this site is to provide an easy to use tool to estimate nutrient contents and prices of various diets. The nutrient values are from the <a href="http://www.ars.usda.gov/services/docs.htm?docid=8964">USDA National Nutrient Database for Standard Reference Release 26</a>. These values are also displayed relative to the <a href="http://www.iom.edu/Activities/Nutrition/SummaryDRIs/DRI-Tables.aspx">IOM Dietary Reference Intakes</a> for each life stage groups of every age and weight. This information may be used to change the composition of a diet to a more balanced and healthier one. Furthermore, calculating price/value ratios helps to choose more economic products and save money.</p>
+
+  <h2>Preferences</h2>
+  <h3>Help</h3>
+  <p class="help">Change this setting to hide the help or display the tutorial.</p>
+  <p class="tutorial">Click on the radio buttons below. Notice the help texts (the ones with the yellowish background) appearing when clicking on the second radio button with the label "Display brief descriptions". Clicking the third radio button labelled "Show me the tutorial", the tutorial (texts with redish background) appears.</p>
+  <div id="help">
+    <input type="radio" id="help_off" name="help" value="none" onchange="helpOff()">No help, thanks. I know what I am doing.<br>
+    <input type="radio" id="help_on" name="help" value="info" onchange="helpOn()">Display brief descriptions.<br>
+    <input type="radio" id="help_tutorial" name="help" value="tutorial" onchange="helpTutorial()">Show me the tutorial.
+  </div>
+
+  <h3><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake" title="Dietary Reference Intake">DRI</a> Settings</h3>
+
+  <p class="help">The recommended value percentages (<a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"><span title="Estimated Average Requirements">EAR</span>, <span title="Recommended Dietary Allowances">RDA</span>, <span title="Adequate Intake">AI</span>, <span title="tolerable Upper Intake levels">UL</span></a>) will appear in the contents sections according to the following settings:</p>
+  <p class="tutorial">Choose you life stage group below from the drop-down list, then enter your age and weight below. DRI percentages will appear in calculations according to this settings.</p>
+  <div id="settings">
+    <table>
+    <tr>
+      <th class="right">Life Stage Group</th>
+      <td>
+        <select id="lsg" onchange="lsg_changed()">
+          <option value="1">Infants (0-11 months)</option>
+          <option value="2">Children (1-8 years)</option>
+          <option value="3">Males (9+ years)</option>
+          <option value="4" selected="1">Females (9+ years)</option>
+          <option value="5">Pregnancy (14-50 years)</option>
+          <option value="6">Lactation (14-50 years)</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <th class="right">Age</th>
+      <td><input id="age" type=text value="35" size="5" onchange="age_changed()"><span id="ageunit">years</span></td>
+    </tr>
+    <tr>
+      <th class="right">Weight</th>
+      <td><input id="weight" type=text value="70" size="5" onchange="weight_changed()">kg</input></td>
+    </tr>
+    </table>
+  </div>
+
+  <h3>Appearance</h3>
+  <p class="help">Nutrient contents are displayed in groups according to the following settings.</p>
+  <p class="tutorial">Tick the checkboxes of the categories you are interested in. These settings will be effective after you press <mark>Show</mark> or <mark>Update</mark> in the contents boxes.</p>
+  <div id="appearance">
+    <table>
+    <tr>
+      <th colspan="2" class="left">Show</th>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="Proximates" type="checkbox" value="Proximates" checked
+                 onchange="change_setting_checkbox('#Proximates.appearance', 'proximates')"></td>
+      <td>proximates</td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="Minerals" type="checkbox" value="Minerals" checked
+                 onchange="change_setting_checkbox('#Minerals.appearance', 'minerals')"></td>
+      <td><a href="http://en.wikipedia.org/wiki/Dietary_mineral">minerals</a></td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="Vitamins" type="checkbox" value="Vitamins" checked
+                 onchange="change_setting_checkbox('#Vitamins.appearance', 'vitamins')"></td>
+      <td><a href="http://en.wikipedia.org/wiki/Vitamin">vitamins</a></td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="Lipids" type="checkbox" value="Lipids" checked
+                 onchange="change_setting_checkbox('#Lipids.appearance', 'lipids')"></td>
+      <td><a href="http://en.wikipedia.org/wiki/Lipid">lipids</a></td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="AminoAcids" type="checkbox" value="Amino_Acids" checked
+                 onchange="change_setting_checkbox('#AminoAcids.appearance', 'aminoacids')"></td>
+      <td><a href="http://en.wikipedia.org/wiki/Amino_Acids">amino acids</a></td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="Others" type="checkbox" value="Others" checked
+                 onchange="change_setting_checkbox('#Others.appearance', 'others')"></td>
+      <td>others</td>
+    </tr>
+    <tr>
+      <td><input class="appearance" id="NA" type="checkbox" value="N/A"
+                 onchange="change_setting_checkbox('#NA.appearance', 'na')"></td>
+      <td>nutrients without relevant data</td>
+    </tr>
+    </table>
+  </div>
+
+  <h2>Food Contents</h2>
+  <p class="help">Here, you can query nutrient contents of various food items by the USDA NDB number, or by choosing from the list.</p>
+  <p class="tutorial">Type an NDB number (for example <em>09040</em>) in the text input line below. Press <mark>Show</mark> below, and watch the nutrient contents appearing. In smart browsers like <a href="http://www.mozilla.org/firefox">Firefox</a>, you may also type a part of the description (for example <em>bananas</em>), and choose from a filtered dropdown list. In other, less smart browsers, you have to provide the NDB number, or choose from the very long unfiltered dropdown list to the right. The long list to the right works in most browsers. If you choose an other food item with either option, then you have to press <mark>Show</mark> or <mark>Update</mark> to see the current item in the contents box below.</p>
+
+  <input list="food_names" id="ndbno" name="ndbno" size="50" oninput="select_NDBNo()"
+   title="Enter the NDBNo of USDA reference data (or in Firefox, just start typing a food name), and choose from the list.">
+  <datalist id="food_names"></datalist>
+  <select id="food_descriptions" onchange="select_food_description()"></select>
+
+  <div class="contents">
+    <button id="show_food_button" type="button" onclick="show_food_contents()">Show</button>
+    <button id="hide_food_button" type="button" onclick="hide_food_contents()">Hide</button>
+    <button id="update_food_button" type="button" onclick="update_food_contents()">Update</button>
+    <table class="contents" id="food_contents">
+    </table>
+  </div>
+  <table id="contents_caption_template" style="display:none">
+    <caption>Nutrient contents of 100g $description:</caption>
+  </table>
+  <table id="contents_head_template" style="display:none">
+    <thead>
+      <tr>
+        <th colspan="$cols">$title</th>
+      </tr>
+      <tr>
+        <th colspan="2">Amount</th>
+        <th>Description</th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Estimated Average Requirement">EAR</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Recommended Dietary Allowance">RDA</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Adequate Intake">AI</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="tolerable Upper Intake level">UL</a></th>
+      </tr>
+    </thead>
+  </table>
+  <table style="display:none">
+    <tbody id="contents_body_template">
+      <tr>
+        <td class="right">$amount</td>
+        <td class="left">$unit</td>
+        <td class="description">$description</td>
+        <td class="dri" title="Estimated Average Requirement">$ear</td>
+        <td class="dri" title="Recommended Dietary Allowance">$rda</td>
+        <td class="dri" title="Adequate Intake">$ai</td>
+        <td class="dri" title="tolerable Upper Intake level">$ul</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+
+  <h2>Products
+    <button type="button" onclick="add_product(true)">Add</button>
+    <button type="button" onclick="delete_selected_products()">Delete Selected</button>
+    <button type="button" onclick="delete_all_products()">Delete All</button>
+  </h2>
+  <p class="help">A product is a composition of food items with a price. It is intended to match the products you buy at a store or a restaurant, so you can see how much nutrient the pack contains and how pricey it is regarding its nutritional value. The price/value ratio shows how much it would cost (using the product) to cover the daily recommended intake of each nutrient. The score of the product (displayed in the contents box) shows how close it is to the ideal food that contains 100% of each nutrient. The score is a number between 0 and 10. The ideal food would have a score of 10 if existed. Less ideal foods get less points.</p>
+  <div class="tutorial">
+    <p>This section is useful to analyze and compare products regarding their nutritional values and price.</p>
+    <p>Let's take the epic example of comparing apples to oranges. Press <mark>Add</mark> twice to the right of the headline <em>Products</em> above. Enter the name <em>apples 1kg</em> in the input line containing the text <em>Product 1</em>. This name helps you to identify the product in the plan later. Enter <em>3.53</em> as price. This value is in USD from <a href="http://www.numbeo.com/cost-of-living/country_result.jsp?country=United+States">numbeo.com</a>. However, you may use other amounts in other currencies as well. The point is that you have to provide prices for different products that are comparable (that is same currency and unit). Press <mark>Add</mark> under the price line to the right of <em>Ingredients</em> below. A new line appears below that. Enter 1000 as the amount instead of 100, because the price is for 1kg of apples. Enter <em>09003</em> as NDBNo. Press <mark>Show</mark> to see the nutrient contents and price/value ratios.</p>
+    <p>Do the same for oranges: replace the name <em>Product 1</em> with <em>oranges 1kg</em>, enter <em>3.31</em> as price, add an ingredient, enter <em>1000</em> grams instead of <em>100</em> as the amount, <em>09200</em> as NDBNo, and finally press <mark>Show</mark> to see the nutrient contents and price/value ratios.</p>
+    <p>Take a look at the contents. Depending on the DRI settings above, the exact recommended percentages and the price/value ratios are likely to be different. In my example apples score 4.32 with the best price/value ratio of 3.32, while oranges score 4.63 with the best price/value ratio of 0.56. If you look at the details, you can find the best P/V in the line of Vitamin C for oranges, so it is a relatively economic source of this nutrient. In regard to other nutrients, these two products seem less economic.</p>
+    <p>Products can be combinations of different food items. This concept corresponds to meals you prepare or eat at a restaurant, and various products you buy at a store. If you make it, then you have to figure out a realistic price that contains the cost of materials, tools, infrastructure, and your work. Otherwise it has a price already.</p>
+    <p>If you have more ingredients you just simply have to press <mark>Add</mark> under the price line to the right of <em>Ingredients</em> below so many times how many different food items the product includes. Specify the amount and the NDB number for each item. Then the contents will show the aggregate nutrent values and P/V ratios for all these items.</p>
+    <p>For example, let two complex products be rice and beans vs. rice and chicken. These typical combinations can be used to compare a vegetarian diet to an omnivorous one. Add two products by pressing <mark>Add</mark> twice to the right of the headline <em>Products</em> above. Press <mark>Add</mark> under the price line to the right of <em>Ingredients</em> below for both new products, and fill in the data: <em>rice&beans</em> as product name, <em>0.45</em> as price, <em>100</em> as amount for NDBNo. <em>20444</em>, and <em>100</em> as amount for NDBNo. <em>16049</em> for the first product; <em>rice&chicken</em> as product name, <em>1.18</em> as price, <em>200</em> as amount for NDBNo. <em>20444</em>, and <em>100</em> as amount for NDBNo. <em>05011</em> for the second product. Now press <mark>Show</mark> for both products, and compare their scores, P/V ratios, RDA and AI percentages.</p>
+  </div>
+
+  <ol id="product_list">
+  </ol>
+  <ol id="product_template" style="display:none">
+    <li class='product' id="$product_id">
+      <input class="selected_product" type="checkbox" value="$product_id" title="Check this box and press 'Delete Selected' after 'Products' to delete this product.">
+      <input class="product_name" id="$product_id" type=text value="$product_name"
+             oninput="enter_product_name('$product_id')" title="Type a name for the product here."></input>
+      <p>Price:
+        <input class="product_price" id="$product_id" type="text" size="12" value="1"
+               onchange="change_product_price($product_id)"
+               title="Type the price of the product here without currency symbol/unit.">
+      </p>
+      <p>Ingredients
+        <button type="button" onclick="add_ingredient('$product_id', true)">Add</button>
+        <button type="button" onclick="delete_ingredient('$product_id')">Delete Selected</button>
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th title="Check the ones you want to delete.">
+            <th title="Amount of food item in the product measured in grams.">Amount [g]
+            <th title="NDBNo. of the food item.">NDBNo.
+            <th title="Description of the food item.">Description
+          </tr>
+        </thead>
+        <tbody class="ingredients" id="$product_id">
+        </tbody>
+      </table>
+      <div class="contents_pv">
+        <button class="show_product_contents_button" id="$product_id" type="button"
+                onclick="show_product_contents('$product_id')">Show</button>
+        <button class="hide_product_contents_button" id="$product_id" type="button"
+                onclick="hide_product_contents('$product_id')">Hide</button>
+        <button class="update_product_contents_button" id="$product_id" type="button"
+                onclick="update_product_contents('$product_id')">Update</button>
+        <table class="product_contents" id="$product_id"></table>
+      </div>
+    </li>
+  </ol>
+  <table id="ingredient_template" style="display:none">
+    <tbody>
+      <tr>
+        <td><input class="selected_ingredient" type="checkbox" value="$ingredient_id"
+                   title="Check this box to delete this ingredient.">
+        <td><input class="amount" id="$ingredient_id" type="text" size="8" value="100"
+                   title="Enter the amount of the ingredient measured in grams."
+                   onchange="change_ingredient_amount($ingredient_id)">
+        <td><input class="ndbno" id="$ingredient_id" list="food_names" name="ndbno" size="50"
+                   oninput="update_ingredient('$ingredient_id')"
+                   title="Enter the NDBNo of USDA reference data (or in Firefox, just start typing a food name), and choose from the list.">
+        <td class="ingdesc" id="$ingredient_id">
+      </tr>
+    </tbody>
+  </table>
+  <table id="pv_contents_head_template" style="display:none">
+    <thead>
+      <tr>
+        <th colspan="$cols">$title</th>
+      </tr>
+      <tr>
+        <th colspan="2">Amount</th>
+        <th>Description</th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Estimated Average Requirement">EAR</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Recommended Dietary Allowance">RDA</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="Adequate Intake">AI</a></th>
+        <th><a href="http://en.wikipedia.org/wiki/Dietary_Reference_Intake#Current_recommendations"
+               title="tolerable Upper Intake level">UL</a></th>
+        <th class="pv" title="Price/Value ratio">P/V</th>
+      </tr>
+    </thead>
+  </table>
+  <table id="pv_contents_body_template" style="display:none">
+    <tbody>
+      <tr>
+        <td class="right">$amount</td>
+        <td class="left">$unit</td>
+        <td class="description">$description</td>
+        <td class="dri" title="Estimated Average Requirement">$ear</td>
+        <td class="dri" title="Recommended Dietary Allowance">$rda</td>
+        <td class="dri" title="Adequate Intake">$ai</td>
+        <td class="dri" title="tolerable Upper Intake level">$ul</td>
+        <td class="pv" title="Price/Value ratio">$pv</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <h2>Plan
+    <button class="export_plan_button" type="button" onclick="export_plan()">Export</button>
+    <a id="export_plan_link" href="" style="display:none"></a>
+    <button class="import_plan_button" type="button" onclick="$('#import_plan_input').click()">Import</button>
+    <input type="file" id="import_plan_input" onchange="import_plan()" style="display:none">
+  </h2>
+  <p class="help">The plan is a composition of products. It may last for several days. The recommended nutrient intakes are calculated for the length of the plan. For example: you list products you consume in a week, and get the nutrient content and price/value calculations for that period. You might use a plan to optimize your weekly purchases.</p>
+  <div class="tutorial">
+    <p>The <em>Plan for ... days.</em> input line is the length of the plan in days. This means that the recommended values are multiplied by this number of days, so you will see the recommended values per plan at Plan Contents. If you change this value, then you have to press <mark>Show</mark> or <mark>Update</mark> to see the current recommended values and price/value ratios in the contents box below.</p>
+    <p>If you followed the instructions in the Products section, you will already have four products you can see in the plan under Plan Items. When you add or delete a product, the corresponding plan items appear or disappear under Plan Items. You may specify the quantity of each product in your plan, that is how many times you want to count the nutrient contents of the product.</p>
+  </div>
+
+  <p>Plan for <input type="text" size="2" value="7" class="plan_length" id="plan_length"
+                     onchange="change_plan_length()"> days.
+  </p>
+
+  <h3>Plan Items</h3>
+
+  <div id="items">
+  <table>
+    <thead>
+      <tr><th>Quantity<th>Product</tr>
+    </thead>
+    <tbody id="plan_list"></tbody>
+  </table>
+  <table style="display:none">
+    <tbody id="plan_item_template">
+      <tr class="plan_item" id="$product_id">
+        <td><input class="quantity" id="$product_id" type="text" size="8" value="1"
+                   onchange="change_plan_quantity($product_id)" title="Enter how many products the plan contains.">
+        <td class="plan_item_name" id="$product_id">$product_name
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Plan Contents</h3>
+  <div class="contents_pv">
+    <button class="show_plan_contents_button" type="button"
+            onclick="show_plan_contents()">Show</button>
+    <button class="hide_plan_contents_button" type="button"
+            onclick="hide_plan_contents()">Hide</button>
+    <button class="update_plan_contents_button" type="button"
+            onclick="update_plan_contents()">Update</button>
+    <table id="plan_contents"></table>
+  </div>
+
+  <h2><a href="contest">Balanced Diet Contest</a></h2>
+  <p class="help">This contest is a way of sharing plans. The submitted plans are ordered by score at the <em>Balanced Diet Contest</em> site, so people looking for ideas on balanced diet will find the best plans there.</p>
+  <div class="tutorial">
+    <p>The purpose of this contest is to motivate dietary research and educate people on healthy, balanced diets. The rules are simple: Create a plan. Check its score. If it is high enough (something above 7), submit it. The submitted plans are listed on the Balanced Diet Contest site in decreasing order of plan score. The best cooks will get the Balanced Diet Champion digital badge.</p>
+  </div>
+  <div id="login">
+    <p>If you want to participate in the <a href="contest">Balanced Diet Contest</a>, you need to identify yourself to 
+       upload data. Sign in to your Google+ account:</p> 
+    <span id="signinButton">
+    <span class="g-signin" data-callback="signinCallback" data-cookiepolicy="single_host_origin"
+          data-clientid="944567077117-gphn2nn17gtmpfs50b3kmt1tu9ta4bq1.apps.googleusercontent.com"
+          data-scope="https://www.googleapis.com/auth/plus.login">
+    </span>
+    </span>
+  </div>
+  <div id="profile">
+    <h3>Attention!</h3>
+    <p>By pressing "Submit", you agree that your Google+ profile URL, image, and display name will 
+       be shared along with your diet plan.
+    </p>
+    <fieldset>
+      <legend>Contest form:</legend>
+      <dl>
+      <dt>You are: 
+      <dd><span id="cooklink"></span>
+      <dt>Plan Title:
+      <dd><input type="text" id="plan_title" value="Give your plan a title here.">
+      <dt>Comments:
+      <dd><textarea id="plan_comments" rows="5" cols="80">Write your comments here.</textarea>
+      </dl>
+      <button type="button" onclick="submit()">Submit</button>
+    </fieldset>
+    
+  </div>
+
+  <h2 id="certification">Certification</h2>
+  <p>Certification is in alpha test phase now! It does not issue badges yet.</p>
+  <p>You may attain the Balanced Diet Expert Badge by completing the tutorial. Make sure this web page satisfies the criteria below, and perform changes if necessary.</p>
+  <ol>
+    <li>DRI settings are the following: 27-year old 81kg males</li>
+    <li>The selected food item under <em>Food Contents</em> is 09040 Bananas, raw.</li>
+    <li>There is a product named "oranges 1kg" priced at "3.31" having one ingredient: amount:"1000", NDBNo:"09200", description:"Oranges, raw, all commercial varieties" </li>
+    <li>There is a product named "rice&beans" priced at "0.45" having two ingredients:
+      <ol>
+        <li>amount:"100", NDBNo:"20444", description:"Rice, white, long-grain, regular, raw, unenriched"</li>
+        <li>amount:"100", NDBNo:"16049", description:"Beans, white, mature seeds, raw"</li>
+      </ol>
+    </li>
+    <li>Plan quantities are: "2" for product "oranges 1kg", and "3" for product "rice&beans".</li>
+    <li>Copy the plan "score" here: <input type="text" id="cert_plan_score">, and the "best P/V" ratio here: <input type="text" id="cert_plan_best_pv">.</li>
+    <li>The badge, you are going to receive, will get into your <a href="http://backpack.openbadges.org/backpack/login">Mozilla Backpack</a>. You need to authenticate yourself through the <a href="https://developer.mozilla.org/en-US/Persona">Mozilla Persona</a> single sign-in solution. Press this button and follow the instructions: <button type="button" onclick="badge()">Badge me</button></li>
+  </ol>
+
+
+  <div class="g-plusone" data-annotation="inline" data-width="300"></div>
+  <div class="fb-like" data-href="http://nutrika-supeti.rhcloud.com/" data-width="450" data-layout="standard" data-show-faces="true" data-send="true"></div>
+  <script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44113537-1', 'nutrika-supeti.rhcloud.com');
+  ga('send', 'pageview');
+  </script>
+</body>
+</html>
+
