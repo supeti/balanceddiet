@@ -135,3 +135,10 @@ div#items {
   padding: 10px;
 }
 
+.copyright {
+  font-size: 12px;
+  margin: 0;
+  padding: 0;
+  text-align: right;
+}
+

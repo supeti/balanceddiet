@@ -104,3 +104,11 @@ div.record {
   margin: 1em;
   padding: 0.5em 0.5em 1em 0.5em;
 }
+
+.copyright {
+  font-size: 12px;
+  margin: 0;
+  padding: 0;
+  text-align: right;
+}
+
