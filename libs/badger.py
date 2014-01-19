@@ -62,7 +62,7 @@ def init(data_dir):
     global badges_arch
     badges_dir = join(data_dir, 'badges')
     if not isdir(badges_dir): mkdir(badges_dir)
-    badges_arch = join(bd, 'BDE.xz')
+    badges_arch = join(badges_dir, 'BDE.xz')
     if access(badges_arch, R_OK):
         load_badges()
     else:
