@@ -61,8 +61,8 @@ site_url = 'http://balanceddiet-supeti.rhcloud.com'
 entry = """
         <entry>
                 <title>%(title)s</title>
-                <id>%(site)s/#%(id)s</id>
-                <link rel='alternate' type='text/html' href='%(site)s/#%(id)s'/>
+                <id>%(site)s/contest/#%(id)s</id>
+                <link rel='alternate' type='text/html' href='%(site)s/contest/#%(id)s'/>
                 <updated>%(updated)s</updated>
                 <summary>%(summary)s</summary>
                 <author>

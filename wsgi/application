@@ -29,7 +29,7 @@ contest.init(site_data_dir)
 import nutrika
 nutrika.init(data_dir, contest_url + 'submit')
 import badger
-badger.init(data_dir)
+badger.init(site_data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
 

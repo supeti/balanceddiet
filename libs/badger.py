@@ -9,21 +9,22 @@ import json
 import lzma
 import pickle
 
+home_url = "http://balanceddiet-supeti.rhcloud.com/"
 badge_class = {
     "name": "Balanced Diet Expert Badge",
     "description": "For demonstrating the ability of using the Balanced Diet Nutrient Calculator.",
-    "image": "http://nutrika-supeti.rhcloud.com/static/BDE-badge.png",
-    "criteria": "http://nutrika-supeti.rhcloud.com/#certification",
+    "image": home_url + "static/BDE-badge.png",
+    "criteria": home_url + "calculator#certification",
     "tags": ["balanced", "diet", "economized"],
-    "issuer": "http://nutrika-supeti.rhcloud.com/ref/issuer",
+    "issuer": home_url + "calculator/ref/issuer",
 }
 
 issuer = {
     "name": "Balanced Diet Community",
-    "image": "http://balanceddiet-supeti.rhcloud.com/static/Cherry-512.png",
+    "image": home_url + "static/Cherry-512.png",
     "url": "https://plus.google.com/u/0/communities/100680827449853706792",
     "email": "sulyokpeti@gmail.com",
-    "revocationList": "http://nutrika-supeti.rhcloud.com/ref/revoked"
+    "revocationList": home_url + "calculator/ref/revoked"
 }
 
 revoked = {}
@@ -36,10 +37,10 @@ badge_instance = {
     "identity": "RECIPIENT@DOMAIN.COM"
   },
   "issuedOn": "1389331638",
-  "badge": "http://nutrika-supeti.rhcloud.com/ref/badge_class",
+  "badge": home_url + "calculator/ref/badge_class",
   "verify": {
     "type": "hosted",
-    "url": "http://nutrika-supeti.rhcloud.com/badges/0"
+    "url": home_url + "calculator/badges/0"
   }
 }
 
@@ -59,7 +60,7 @@ def init(data_dir):
     global badges_dict
     badges_dict = {}
     global badges_arch
-    badges_arch = join(data_dir, 'badges.xz')
+    badges_arch = join(data_dir, 'badges/BDE.xz')
     if access(badges_arch, R_OK):
         load_badges()
     else:
@@ -75,8 +76,8 @@ def verify_persona(assertion):
     request.add_header('Content-Type', 'application/json;charset=utf-8')
     return json.loads(urlopen(request).readall().decode())
 
-badge_url_tmpl = "http://nutrika-supeti.rhcloud.com/badges/%s"
-badge_cb_tmpl = "http://nutrika-supeti.rhcloud.com/badgecallback/%s"
+badge_url_tmpl = home_url + "calculator/badges/%s"
+badge_cb_tmpl = home_url + "calculator/badgecallback/%s"
 
 def issue_badge(assertion):
     response = {}
