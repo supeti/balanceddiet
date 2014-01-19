@@ -65,6 +65,7 @@ def init(data_dir):
         load_badges()
     else:
         badges = []
+        save_badges()
     
 
 persona_url = 'https://verifier.login.persona.org/verify'
