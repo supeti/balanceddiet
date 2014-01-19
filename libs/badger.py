@@ -87,14 +87,14 @@ def issue_badge(assertion):
         if email in badges_dict:
             response['result'] = 'old'
             response['badge_url'] = badge_url_tmpl % badges_dict[email]
-            response['badge_callback'] = badge_cb_tmpl % badges_dict[email]
+            #response['badge_callback'] = badge_cb_tmpl % badges_dict[email]
         else:
             badge_id = len(badges)
             time = int(datetime.datetime.today().timestamp())
             badges.append((email, time))
             response['result'] = 'new'
             response['badge_url'] = badge_url_tmpl % badge_id
-            response['badge_callback'] = badge_cb_tmpl % badge_id
+            #response['badge_callback'] = badge_cb_tmpl % badge_id
             badges_dict[email] = badge_id
             save_badges()
     else:

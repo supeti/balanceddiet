@@ -223,7 +223,10 @@ def contest_app(environ, start_response, path_info):
 
 def calculator_app(environ, start_response, path_info):
     ctype = 'text/plain; charset=UTF-8'
-    print('HTTP_ACCEPT_ENCODING' + '=' + environ['HTTP_ACCEPT_ENCODING'])
+    if 'HTTP_ACCEPT_ENCODING' in environ:
+        print('HTTP_ACCEPT_ENCODING' + '=' + environ['HTTP_ACCEPT_ENCODING'])
+    else:
+        print(environ)
     if len(path_info) == 1:
         static = static_objects['calculator.html']
         start_response('200 OK', static.header)
