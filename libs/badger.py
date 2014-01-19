@@ -68,10 +68,9 @@ def init(data_dir):
     
 
 persona_url = 'https://verifier.login.persona.org/verify'
-#self_url = 'http://nutrika-supeti.rhcloud.com/'
-self_url = 'localhost'
+#local_url = 'localhost'
 def verify_persona(assertion):
-    data = { 'assertion': assertion, 'audience': self_url }
+    data = { 'assertion': assertion, 'audience': home_url }
     request = Request(persona_url, json.dumps(data).encode('UTF-8'))
     request.add_header('Content-Type', 'application/json;charset=utf-8')
     return json.loads(urlopen(request).readall().decode())
