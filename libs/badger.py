@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from os import access, R_OK
-from os.path import join
+from os import access, mkdir, R_OK
+from os.path import isdir,join
 from urllib.request import urlopen, Request
 import datetime
 import gzip
@@ -60,7 +60,9 @@ def init(data_dir):
     global badges_dict
     badges_dict = {}
     global badges_arch
-    badges_arch = join(data_dir, 'badges/BDE.xz')
+    badges_dir = join(data_dir, 'badges')
+    if not isdir(badges_dir): mkdir(badges_dir)
+    badges_arch = join(bd, 'BDE.xz')
     if access(badges_arch, R_OK):
         load_badges()
     else:
