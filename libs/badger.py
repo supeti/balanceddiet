@@ -114,12 +114,9 @@ def get_badge(badge_id):
         badge_instance['recipient']['identity'] = email
         badge_instance['issuedOn'] = ts
         badge_instance['verify']['url'] = badge_url_tmpl % badge_id
-        response['result'] = 'success'
-        response['badge'] = badge_instance
+        return json.dumps(badge_instance)
     else:
-        response['result'] = 'faliure'
-        response['message'] = 'unkown badge ID'
-    return json.dumps(response)
+        return '{}'
 
 def backup():
     return badges_arch
