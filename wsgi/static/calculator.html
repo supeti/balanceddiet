@@ -825,13 +825,13 @@ var callback_issue = function(errors, successes) {
 var return_badge = function(data) {
   if ("new" == data.result) {
     var ok = confirm("Congratulations! Your new badge is available at\n" + data.badge_url + 
-                     "\nDo you want to add it to your Mozilla hosted Backpack?")
+                     "\nYou are going to add it to your Mozilla hosted Backpack.")
     if (ok == true) {
       OpenBadges.issue([data.badge_url], callback_issue);
     }
   } else if ("old" == data.result) {
     var ok = confirm("You have a badge already at\n" + data.badge_url + 
-                     "\nDo you want to add it to your Mozilla hosted Backpack?")
+                     "\nYou are going to add it to your Mozilla hosted Backpack.")
     if (ok == true) {
       OpenBadges.issue([data.badge_url], callback_issue);
     }
