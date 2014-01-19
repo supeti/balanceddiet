@@ -22,7 +22,7 @@ badge_class = {
 issuer = {
     "name": "Balanced Diet Community",
     "image": home_url + "static/Cherry-512.png",
-    "url": "https://plus.google.com/u/0/communities/100680827449853706792",
+    "url": home_url,
     "email": "sulyokpeti@gmail.com",
     "revocationList": home_url + "calculator/ref/revoked"
 }
