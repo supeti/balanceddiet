@@ -53,7 +53,7 @@ class Badger(object):
                 response['result'] = 'new'
                 response['badge_url'] = self.badges_url + str(badge_id)
                 self.badges_dict[email] = badge_id
-                save_badges()
+                self.save()
         else:
             response['result'] = 'error'
             response['message'] = creds['reason']
