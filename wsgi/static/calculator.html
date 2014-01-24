@@ -747,7 +747,7 @@ function signinCallback(authResult) {
 
 var return_submit = function(data) {
   if ("success" == data.result) {
-    window.location.assign(data.url);
+    window.location.assign('contest/my_plans');
   } else {
     alert("Error!\n" + data.response);
   }
@@ -766,7 +766,7 @@ function submit() {
       comments: $("#plan_comments").val(),
       user: user
   });
-  $.post("calculator/submit", data, return_submit);
+  $.post("contest/submit", data, return_submit);
 }
 
 function wrong_answer(variable, value, message) {

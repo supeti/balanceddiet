@@ -29,7 +29,6 @@ contest.init(site_data_dir)
 import nutrika
 nutrika.init(data_dir, contest_url + 'submit')
 import badger
-badger.init(site_data_dir)
 
 static_dir = os.path.join(repo_dir, "wsgi/static")
 
@@ -59,6 +58,7 @@ static_objects = {
     'Nutrika.css': Static('Nutrika.css', 'text/css'),
     'Nutrika-16.png': Static('Nutrika-16.png', 'image/png', False),
     'Nutrika-128.png': Static('Nutrika-128.png', 'image/png', False),
+    'BDC-badge.png': Static('BDC-badge.png', 'image/png', False),
     'BDE-badge.png': Static('BDE-badge.png', 'image/png', False),
     'calculator.html': Static('calculator.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
@@ -76,14 +76,21 @@ class ReferenceData(object):
         self.header.append(('Content-Length', str(len(jd))))
         self.response = [jd]
 
-reference_objects = {
+bdc = badger.BDC(site_data_dir)
+contest_refs = {
+    'badge_class': ReferenceData(bdc.badge_class),
+    'issuer': ReferenceData(bdc.issuer),
+    'revoked': ReferenceData(bdc.revoked),
+}
+bde = badger.BDE(site_data_dir)
+calculator_refs = {
     'nutrient_links': ReferenceData(nutrika.nutrient_links, True),
     'foodgroups': ReferenceData(nutrika.foodgroup_dict, True),
     'foods': ReferenceData({'foods' : nutrika.food_list,
                             'version' : '2'}, True),
-    'badge_class': ReferenceData(badger.badge_class),
-    'issuer': ReferenceData(badger.issuer),
-    'revoked': ReferenceData(badger.revoked),
+    'badge_class': ReferenceData(bde.badge_class),
+    'issuer': ReferenceData(bde.issuer),
+    'revoked': ReferenceData(bde.revoked),
 }
 
 def get_list():
@@ -141,6 +148,10 @@ def contest_app(environ, start_response, path_info):
                 ctype = 'application/json; charset=UTF-8'
         else:
             print("unkkown json request:"+str(path_info))
+    elif path_info[1] == 'ref':
+        ref = contest_refs[path_info[2]]
+        start_response('200 OK', ref.header)
+        return ref.response
     elif path_info[1] == 'feed':
         start_response('200 OK', contest.feed_header)
         return contest.feed_response
@@ -164,6 +175,16 @@ def contest_app(environ, start_response, path_info):
         static = static_objects['my_plans.html']
         start_response('200 OK', static.header)
         return static.response
+    elif path_info[1] == 'badges':
+        response_body = bdc.get_badge(path_info[2])
+        ctype = 'application/json; charset=UTF-8'
+    elif path_info[1] == 'badge':
+        length = int(environ['CONTENT_LENGTH'])
+        request = json.loads(environ['wsgi.input'].read(length).decode())
+        print(request)
+        response_body = bdc.issue_badge(request['persona_assertion'])
+        print(response_body)
+        ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'admin':
         static = static_objects['admin.html']
         start_response('200 OK', static.header)
@@ -189,20 +210,35 @@ def contest_app(environ, start_response, path_info):
     elif path_info[1] == 'submit':
         length = int(environ['CONTENT_LENGTH'])
         request = json.loads(environ['wsgi.input'].read(length).decode())
-        if request['password'] == 'b7647ea13a32fef8d9f341f921d6c69e14401133':
-            user = request['user']
-            if user['id'] == contest.get_gplus_account_id(user['access_token']):
-                del request['password']
-                del user['access_token']
-                contest.add_record(request)
-                response_body = successful_submit
-            else:
-                response_body = unauthorized_user
+        request['contents'] = nutrika.get_contents('plan_contents', 
+                                                   request['plan_input'])
+        user = request['user']
+        if user['id'] == contest.get_gplus_account_id(user['access_token']):
+            del user['access_token']
+            contest.add_record(request)
+            response_body = successful_submit
         else:
-            response_body = unauthorized_client
+            response_body = unauthorized_user
         ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'static':
         static = static_objects[path_info[2]]
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'badges-BDC.xz':
+        start_response('200 OK', [('Content-type', 'application/x-xz')])
+        return FileWrapper(open(bdc.backup(), "rb"))
+    elif path_info[1] == 'restore-badges':
+        length = int(environ['CONTENT_LENGTH'])
+        with open('restore.dat', 'wb') as f:
+            f.write(environ['wsgi.input'].read(length))
+        datafn = os.path.join(data_dir,'restore.xz')
+        with open('restore.dat', 'r') as f:
+            form = cgi.FieldStorage(fp=f, environ=environ)
+            with open(datafn, 'wb') as g:
+                g.write(form['archive'].value)
+        if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
+            bdc.restore(datafn)
+        static = static_objects['admin.html']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'health':
@@ -241,7 +277,7 @@ def calculator_app(environ, start_response, path_info):
         #print(response_body)
         ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'ref':
-        ref = reference_objects[path_info[2]]
+        ref = calculator_refs[path_info[2]]
         start_response('200 OK', ref.header)
         return ref.response
     elif not path_info[1]:
@@ -257,13 +293,13 @@ def calculator_app(environ, start_response, path_info):
     #    start_response('200 OK', static.header)
     #    return static.response
     elif path_info[1] == 'badges':
-        response_body = badger.get_badge(path_info[2])
+        response_body = bde.get_badge(path_info[2])
         ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'badge':
         length = int(environ['CONTENT_LENGTH'])
         request = json.loads(environ['wsgi.input'].read(length).decode())
         print(request)
-        response_body = badger.issue_badge(request['persona_assertion'])
+        response_body = bde.issue_badge(request['persona_assertion'])
         print(response_body)
         ctype = 'application/json; charset=UTF-8'
     elif path_info[1] == 'static':
@@ -290,9 +326,9 @@ def calculator_app(environ, start_response, path_info):
         static = static_objects['admin.html']
         start_response('200 OK', static.header)
         return static.response
-    elif path_info[1] == 'badges.xz':
+    elif path_info[1] == 'badges-BDE.xz':
         start_response('200 OK', [('Content-type', 'application/x-xz')])
-        return FileWrapper(open(badger.backup(), "rb"))
+        return FileWrapper(open(bde.backup(), "rb"))
     elif path_info[1] == 'restore-badges':
         length = int(environ['CONTENT_LENGTH'])
         with open('restore.dat', 'wb') as f:
@@ -303,7 +339,7 @@ def calculator_app(environ, start_response, path_info):
             with open(datafn, 'wb') as g:
                 g.write(form['archive'].value)
         if form['passwd'].value == 'f7341d6c699214401b764eea13a312fef8d9f133':
-            badger.restore(datafn)
+            bde.restore(datafn)
         static = static_objects['admin.html']
         start_response('200 OK', static.header)
         return static.response
