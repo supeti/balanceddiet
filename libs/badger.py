@@ -42,15 +42,16 @@ class Badger(object):
         print(creds)
         if creds['status'] == 'okay':
             email = creds['email']
-            if email in badges_dict:
+            if email in self.badges_dict:
                 response['result'] = 'old'
-                response['badge_url'] = self.badges_url + badges_dict[email]
+                badge_id = self.badges_dict[email]
+                response['badge_url'] = self.badges_url + str(badge_id)
             else:
-                badge_id = len(badges)
+                badge_id = len(self.badges)
                 time = int(datetime.datetime.today().timestamp())
                 self.badges.append((email, time))
                 response['result'] = 'new'
-                response['badge_url'] = self.badges_url + badge_id
+                response['badge_url'] = self.badges_url + str(badge_id)
                 self.badges_dict[email] = badge_id
                 save_badges()
         else:
