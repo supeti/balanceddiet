@@ -62,6 +62,7 @@ static_objects = {
     'BDE-badge.png': Static('BDE-badge.png', 'image/png', False),
     'calculator.html': Static('calculator.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
+    'sitemap.xml': Static('sitemap.xml', 'text/html; charset=UTF-8'),
     '404.html': Static('404.html', 'text/html; charset=UTF-8')
 }
 
@@ -377,6 +378,10 @@ def application(environ, start_response):
         return static.response
     elif path_info[1] == 'static':
         static = static_objects[path_info[2]]
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'sitemap.xml':
+        static = static_objects['sitemap.xml']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'health':
