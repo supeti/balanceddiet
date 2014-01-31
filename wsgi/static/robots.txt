@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /calculator/json/
+Disallow: /calculator/ref/
+Disallow: /calculator/badges/
+Disallow: /contest/json/
+Disallow: /contest/ref/
+Disallow: /contest/badges/

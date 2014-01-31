@@ -63,6 +63,7 @@ static_objects = {
     'calculator.html': Static('calculator.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
     'sitemap.xml': Static('sitemap.xml', 'text/html; charset=UTF-8'),
+    'robots.txt': Static('robots.txt', 'text/html; charset=UTF-8'),
     '404.html': Static('404.html', 'text/html; charset=UTF-8')
 }
 
@@ -382,6 +383,10 @@ def application(environ, start_response):
         return static.response
     elif path_info[1] == 'sitemap.xml':
         static = static_objects['sitemap.xml']
+        start_response('200 OK', static.header)
+        return static.response
+    elif path_info[1] == 'robots.txt':
+        static = static_objects['robots.txt']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'health':
