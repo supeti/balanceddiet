@@ -62,8 +62,8 @@ static_objects = {
     'BDE-badge.png': Static('BDE-badge.png', 'image/png', False),
     'calculator.html': Static('calculator.html', 'text/html; charset=UTF-8'),
     'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
-    'sitemap.xml': Static('sitemap.xml', 'text/html; charset=UTF-8'),
-    'robots.txt': Static('robots.txt', 'text/html; charset=UTF-8'),
+    'sitemap.xml': Static('sitemap.xml', 'text/html; charset=UTF-8', False),
+    'robots.txt': Static('robots.txt', 'text/html; charset=UTF-8', False),
     '404.html': Static('404.html', 'text/html; charset=UTF-8')
 }
 
@@ -382,10 +382,16 @@ def application(environ, start_response):
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'sitemap.xml':
+        if 'HTTP_ACCEPT_ENCODING' in environ:
+            print(environ['HTTP_ACCEPT_ENCODING'])
+        else: print('no HTTP_ACCEPT_ENCODING')
         static = static_objects['sitemap.xml']
         start_response('200 OK', static.header)
         return static.response
     elif path_info[1] == 'robots.txt':
+        if 'HTTP_ACCEPT_ENCODING' in environ:
+            print('HTTP_ACCEPT_ENCODING=' + environ['HTTP_ACCEPT_ENCODING'])
+        else: print('no HTTP_ACCEPT_ENCODING')
         static = static_objects['robots.txt']
         start_response('200 OK', static.header)
         return static.response
