@@ -112,3 +112,30 @@ div.record {
   text-align: right;
 }
 
+span.menu {
+  background: PapayaWhip;
+  border: 2px solid;
+  border-color: white;
+  border-radius: 15px;
+  box-shadow: 3px 3px 5px #888888;
+  padding: 0 0.5em 0 0.5em;
+}
+
+a.menu {
+  background: Lavender;
+  border: 2px solid;
+  border-color: white;
+  border-radius: 15px;
+  box-shadow: 10px 10px 5px #888888;
+  padding: 0 0.5em 0 0.5em;
+}
+
+a.menu:hover {
+  background: White;
+  border: 2px solid;
+  border-color: white;
+  border-radius: 15px;
+  box-shadow: 3px 3px 5px #888888;
+  padding: 0 0.5em 0 0.5em;
+}
+
