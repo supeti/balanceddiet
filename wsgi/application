@@ -265,7 +265,6 @@ def calculator_app(environ, start_response, path_info):
         request = json.loads(environ['wsgi.input'].read(length).decode())
         request['contents'] = nutrika.get_contents('plan_contents', 
                                                    request['plan_input'])
-        request['password'] = 'b7647ea13a32fef8d9f341f921d6c69e14401133'
         response = json.loads(nutrika.submit_plan(json.dumps(request)))
         response['url'] = contest_url + 'my_plans'
         response_body = json.dumps(response)
