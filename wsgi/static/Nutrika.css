@@ -169,3 +169,22 @@ a.menu:hover {
   padding: 0 0.5em 0 0.5em;
 }
 
+div.chart {
+  background: LightGoldenRodYellow;
+  border: 2px solid;
+  border-color: white;
+  border-radius: 15px;
+  box-shadow: 10px 10px 5px #888888;
+  float: right; 
+  padding: 10px;
+  width: 700px;
+}
+
+text.highcharts-title {
+  font-family: "Tienne";
+}
+
+text.highcharts-subtitle {
+  font-family: "Tienne";
+}
+

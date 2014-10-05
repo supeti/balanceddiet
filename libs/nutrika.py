@@ -141,7 +141,7 @@ def drival_to_str(c, val, price):
     else:
         pv = None
         pv_str = 'N/A'
-    return (str(round(percent, 2)) + '%', pv_str, pv)
+    return (str(round(percent, 2)) + '%', pv_str, pv, percent)
 
 def calc_dev(amount, dri):
     return math.exp(-abs(amount - dri) / dri)
@@ -153,7 +153,7 @@ def get_dri_values(amount, nutr_no, ctx, price):
     multiplied by the number of days
     """
     ear_str, rda_str, ai_str, ul_str, pv_str = '', '', '', '', ''
-    pv, dev = None, None
+    pv, dev, percent = None, None, None
     if nutr_no in dri_dict.keys():
         for ilsg, min_age, max_age, ear, rda, ai, ul in dri_dict[nutr_no]:
             if (ctx.lsg == ilsg and 
@@ -162,10 +162,10 @@ def get_dri_values(amount, nutr_no, ctx, price):
         if ear: 
             ear_str = str(round(c / ear, 2)) + '%'
         if rda:
-            rda_str, pv_str, pv = drival_to_str(c, rda, price)
+            rda_str, pv_str, pv, percent = drival_to_str(c, rda, price)
             dev = calc_dev(amount, rda * ctx.days)
         if ai: 
-            ai_str, pv_str, pv = drival_to_str(c, ai, price)
+            ai_str, pv_str, pv, percent = drival_to_str(c, ai, price)
             dev = calc_dev(amount, ai * ctx.days)
         if ul:
             ul_str = str(round(c / ul, 2)) + '%'
@@ -177,14 +177,14 @@ def get_dri_values(amount, nutr_no, ctx, price):
         if ear: 
             ear_str = str(round(c / ear, 2)) + '%'
         if rda:
-            rda_str, pv_str, pv = drival_to_str(c, rda, price)
+            rda_str, pv_str, pv, percent = drival_to_str(c, rda, price)
             dev = calc_dev(amount, rda * ctx.days * ctx.weight)
         if ai: 
-            ai_str, pv_str, pv = drival_to_str(c, ai, price)
+            ai_str, pv_str, pv, percent = drival_to_str(c, ai, price)
             dev = calc_dev(amount, ai * ctx.days * ctx.weight)
         if ul:
             ul_str = str(round(c / ul, 2)) + '%'
-    return (ear_str, rda_str, ai_str, ul_str, pv_str, pv, dev)
+    return (ear_str, rda_str, ai_str, ul_str, pv_str, pv, dev, percent)
     
 
 content_section_limits = [(5000, 'Proximates'), (6300, 'Minerals'),
@@ -203,17 +203,27 @@ def build_contents(context, nutrients):
     best_pv = float('inf')
     worst_pv = 0
     dev_sum = 0
+    detail_dict = {k:[] for k in nutrients.keys}
+    detail_list = []
     for sr_no, nutr_no, unit, abbr, desc, digits in nutrient_sr_order:
-        applicable, amount = nutrients.get_amount(nutr_no)
+        applicable, amount, details = nutrients.get_amount(nutr_no)
         if applicable:
             (ear, rda, ai, ul,
-             pvs, pv, dev) = get_dri_values(amount, nutr_no, context, 
-                                            nutrients.price)
+             pvs, pv, dev, pc) = get_dri_values(amount, nutr_no, context, 
+                                                nutrients.price)
             if pv:
                 best_pv = min(pv, best_pv)
                 worst_pv = max(pv, worst_pv)
             if dev:
                 dev_sum += dev
+            #print(nutr_no, pc, rda, ai)
+            if pc:
+                detail_list.append(nutrient_dict[nutr_no][2])
+                for k in nutrients.keys:
+                    if k in details:
+                        detail_dict[k].append(pc*details[k]/amount)
+                    else:
+                        detail_dict[k].append(0)
             amount = round(amount, 3)
             if content_section_limits[section][0] <= sr_no:
                 contents.append({'title' : content_section_limits[section][1],
@@ -224,11 +234,15 @@ def build_contents(context, nutrients):
         current_section.append({'amount':amount, 'unit':unit, 'desc':desc,
                                 'ear':ear, 'rda':rda, 'ai':ai, 
                                 'ul':ul, 'pv':pvs})
+    detail_data = [{ 'data': detail_dict[k], 'name': food_dict[k][1]} 
+                   for k in nutrients.keys]
     contents.append({'title' : content_section_limits[section][1],
                      'data' : current_section})
     score = dev_sum / dri_count * 10
+    print(detail_list)
+    print(detail_dict)
     return (contents, str(round(best_pv, 2)), str(round(worst_pv, 2)),
-            str(round(score, 2)))
+            str(round(score, 2)), detail_list, detail_data)
 
 class FoodNutrients(object):
     """
@@ -237,12 +251,15 @@ class FoodNutrients(object):
     def __init__(self, ndbno):
         self.nutrients = content_dict[ndbno]
         self.price = None
+        self.keys = [ndbno]
+        self.ndbno = ndbno
     def get_amount(self, nutr_no):
         """returns (applicable, amount)"""
         if nutr_no in self.nutrients.keys():
-            return (True, self.nutrients[nutr_no])
+            nutrient_amount = self.nutrients[nutr_no]
+            return (True, nutrient_amount, { self.ndbno: nutrient_amount })
         else:
-            return (False, 0)
+            return (False, 0, {})
 
 def get_food_contents(ndbno, lsg, age, weight):
     """
@@ -251,7 +268,7 @@ def get_food_contents(ndbno, lsg, age, weight):
     """
     context = Context(lsg, float(age), float(weight))
     nutrients = FoodNutrients(ndbno)
-    contents, bpv, wpv, score = build_contents(context, nutrients)
+    contents, bpv, wpv, score, dl, details = build_contents(context, nutrients)
     return { 'contents': contents, 'bpv': bpv, 'wpv': wpv, 'score': score }
 
 class ProductNutrients(object):
@@ -261,16 +278,21 @@ class ProductNutrients(object):
     def __init__(self, product):
         self.ingredients = product['ingredients'].values()
         self.price = float(product['price'])
+        self.keys = [ingredient['ndbno'] for ingredient in self.ingredients]
     def get_amount(self, nutr_no):
         """returns (applicable, amount)"""
         applicable = False
         amount = 0
+        details = {}
         for ingredient in self.ingredients:
-            nutrients = content_dict[ingredient['ndbno']]
+            ingredient_ndbno = ingredient['ndbno']
+            nutrients = content_dict[ingredient_ndbno]
             if nutr_no not in nutrients.keys(): continue
             applicable = True
-            amount += nutrients[nutr_no] * float(ingredient['amount']) * 0.01
-        return (applicable, amount)
+            nutrient_amount = nutrients[nutr_no] * float(ingredient['amount']) * 0.01
+            details[ingredient_ndbno] = nutrient_amount
+            amount += nutrient_amount
+        return (applicable, amount, details)
 
 def get_product_contents(lsg, age, weight, product):
     """
@@ -279,9 +301,10 @@ def get_product_contents(lsg, age, weight, product):
     """
     context = Context(lsg, float(age), float(weight))
     nutrients = ProductNutrients(product)
-    contents, bpv, wpv, score = build_contents(context, nutrients)
+    contents, bpv, wpv, score, dl, details = build_contents(context, nutrients)
     return { 'product_id': product['id'], 'contents': contents,
-             'bpv': bpv, 'wpv': wpv, 'score': score }
+             'bpv': bpv, 'wpv': wpv, 'score': score, 
+             'categories':dl, 'series': details }
 
 class PlanNutrients(object):
     """
@@ -290,22 +313,28 @@ class PlanNutrients(object):
     def __init__(self, plan):
         self.plan = plan
         self.price = 0
+        self.keys = []
         for product in self.plan['products']:
             print(product)
             self.price += float(product['price']) * float(product['quantity'])
+            self.keys.append(product['name'])
     def get_amount(self, nutr_no):
         """returns (applicable, amount)"""
         applicable = False
         amount = 0
+        details = {}
         for product in self.plan['products']:
             quantity = float(product['quantity'])
+            product_amount = 0
             for ingredient in product['ingredients']:
                 nutrients = content_dict[ingredient['ndbno']]
                 if nutr_no not in nutrients.keys(): continue
                 applicable = True
                 m = quantity  * float(ingredient['amount']) * 0.01
-                amount += nutrients[nutr_no] * m
-        return (applicable, amount)
+                product_amount = nutrients[nutr_no] * m
+                amount += product_amount
+            details[product['name']] = product_amount
+        return (applicable, amount, details)
 
 def get_plan_contents(lsg, age, weight, plan):
     """
@@ -314,14 +343,16 @@ def get_plan_contents(lsg, age, weight, plan):
     """
     context = Context(lsg, float(age), float(weight), float(plan['days']))
     nutrients = PlanNutrients(plan)
-    contents, bpv, wpv, score = build_contents(context, nutrients)
-    return { 'contents': contents, 'bpv': bpv, 'wpv': wpv, 'score': score }
+    contents, bpv, wpv, score, dl, details = build_contents(context, nutrients)
+    return { 'contents': contents, 'bpv': bpv, 'wpv': wpv, 'score': score, 
+             'categories':dl, 'series': details }
 
 def get_contents(kind, args):
     """
     provides a list of nutrient contents for
     a food, a product, or a plan
     """
+    print(kind, args)
     if kind == 'food_contents': return get_food_contents(**args)
     elif kind == 'product_contents': return get_product_contents(**args)
     elif kind == 'plan_contents': return get_plan_contents(**args)
