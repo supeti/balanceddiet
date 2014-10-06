@@ -234,13 +234,14 @@ def build_contents(context, nutrients):
         current_section.append({'amount':amount, 'unit':unit, 'desc':desc,
                                 'ear':ear, 'rda':rda, 'ai':ai, 
                                 'ul':ul, 'pv':pvs})
-    detail_data = [{ 'data': detail_dict[k], 'name': food_dict[k][1]} 
+    print('detail_list:', detail_list)
+    print('detail_dict:', detail_dict)
+    print('nutrients.keys', nutrients.keys)
+    detail_data = [{ 'data': detail_dict[k], 'name': nutrients.get_name(k)} 
                    for k in nutrients.keys]
     contents.append({'title' : content_section_limits[section][1],
                      'data' : current_section})
     score = dev_sum / dri_count * 10
-    print(detail_list)
-    print(detail_dict)
     return (contents, str(round(best_pv, 2)), str(round(worst_pv, 2)),
             str(round(score, 2)), detail_list, detail_data)
 
@@ -260,6 +261,8 @@ class FoodNutrients(object):
             return (True, nutrient_amount, { self.ndbno: nutrient_amount })
         else:
             return (False, 0, {})
+    def get_name(self, key):
+        return food_dict[key][1]
 
 def get_food_contents(ndbno, lsg, age, weight):
     """
@@ -293,6 +296,8 @@ class ProductNutrients(object):
             details[ingredient_ndbno] = nutrient_amount
             amount += nutrient_amount
         return (applicable, amount, details)
+    def get_name(self, key):
+        return food_dict[key][1]
 
 def get_product_contents(lsg, age, weight, product):
     """
@@ -315,7 +320,7 @@ class PlanNutrients(object):
         self.price = 0
         self.keys = []
         for product in self.plan['products']:
-            print(product)
+            print('product:', product)
             self.price += float(product['price']) * float(product['quantity'])
             self.keys.append(product['name'])
     def get_amount(self, nutr_no):
@@ -335,6 +340,8 @@ class PlanNutrients(object):
                 amount += product_amount
             details[product['name']] = product_amount
         return (applicable, amount, details)
+    def get_name(self, key):
+        return key
 
 def get_plan_contents(lsg, age, weight, plan):
     """

@@ -239,8 +239,8 @@ function get_foods() {
   });
 }
 
-function update_food_chart(chart_id, subtitle_text, xAxis_categories, series_data) {
-  $("#"+chart_id).highcharts({
+function update_food_chart(subtitle_text, xAxis_categories, series_data) {
+  $("#food-chart").highcharts({
     chart: {
       backgroundColor: "#FAFAD2",
       type: "bar",
@@ -321,7 +321,7 @@ var receive_food_contents = function(data) {
       contents.append(body + "</tbody>");
     }
   });
-  update_food_chart("food-chart", "100g " + description, categories, series);
+  update_food_chart("100g " + description, categories, series);
 };
 
 function update_food_contents() {
@@ -340,6 +340,7 @@ function update_food_contents() {
 
 function hide_food_contents() {
   $("#food_contents").hide();
+  $("#food-chart").hide();
   $("#show_food_button").show();
   $("#hide_food_button").hide();
   $("#update_food_button").hide();
@@ -351,6 +352,7 @@ function show_food_contents() {
   $("#hide_food_button").show();
   $("#update_food_button").show();
   $("#food_contents").show();
+  $("#food-chart").show();
 }
 
 function load_ingredient(from) {
@@ -420,6 +422,7 @@ $(function() {
   if (!("id" in document.createElement("datalist")))
     alert("Attention!\nUnfortunatelly your browser is not good\nenough for this site. You should use a\nbrowser that supports HTML5 datalist tags.\n For example: Chrome,\nFirefox, or Opera.");
   $("#food_contents").hide();
+  $("#food_chart").hide();
   $("#show_food_button").show();
   $("#hide_food_button").hide();
   $("#update_food_button").hide();
@@ -580,6 +583,7 @@ function show_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").show();
   $("#" + product_id + ".update_product_contents_button").show();
   $("#" + product_id + ".product_contents").show();
+  $("#" + product_id + "-chart").show();
 }
 
 function hide_product_contents(product_id) {
@@ -587,6 +591,7 @@ function hide_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").hide();
   $("#" + product_id + ".update_product_contents_button").hide();
   $("#" + product_id + ".product_contents").hide();
+  $("#" + product_id + "-chart").hide();
 }
 
 function update_product_chart(product_id, xAxis_categories, series_data) {
@@ -699,6 +704,7 @@ function show_plan_contents() {
   $(".hide_plan_contents_button").show();
   $(".update_plan_contents_button").show();
   $("#plan_contents").show();
+  $("#plan_chart").show();
 }
 
 function hide_plan_contents() {
@@ -706,6 +712,44 @@ function hide_plan_contents() {
   $(".hide_plan_contents_button").hide();
   $(".update_plan_contents_button").hide();
   $("#plan_contents").hide();
+  $("#plan_chart").hide();
+}
+
+function update_plan_chart(xAxis_categories, series_data) {
+  $("#plan-chart").highcharts({
+    chart: {
+      backgroundColor: "#FAFAD2",
+      type: "bar",
+      height: 100 + xAxis_categories.length * 30
+    },
+    plotOptions: {
+      series: {
+        stacking: 'normal'
+      }
+    },
+    series: series_data,
+    title: {
+      text: "Nutrient Contents of the Plan"
+    },
+    tooltip: {
+      formatter: function () {
+        return "<b>" + this.x + "</b><br/>" +
+               this.series.name + ": " + parseFloat(this.y).toFixed(2) + "%" + "<br/>" +
+               "<b>Total: " + parseFloat(this.total).toFixed(2) + "%</b>"
+      }
+    },
+    xAxis: {
+      categories: xAxis_categories
+    },
+    yAxis: {
+      labels: {
+        formatter: function () { return this.value + "%" }
+      },
+      title: {
+        text: "volume (RDA% or AI%)"
+      }
+    }
+  });
 }
 
 var plan_bpv;
@@ -745,6 +789,7 @@ var receive_plan_contents = function(data) {
     }
   });
   plan_contents.show();
+  update_plan_chart(data.categories, data.series);
 };
 
 function get_plan_input(submit) {
