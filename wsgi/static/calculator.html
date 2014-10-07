@@ -240,7 +240,7 @@ function get_foods() {
 }
 
 function update_food_chart(subtitle_text, xAxis_categories, series_data) {
-  $("#food-chart").highcharts({
+  $("#food.chart").highcharts({
     chart: {
       backgroundColor: "#FAFAD2",
       type: "bar",
@@ -340,7 +340,7 @@ function update_food_contents() {
 
 function hide_food_contents() {
   $("#food_contents").hide();
-  $("#food-chart").hide();
+  $("div#food.chart div").hide();
   $("#show_food_button").show();
   $("#hide_food_button").hide();
   $("#update_food_button").hide();
@@ -352,7 +352,7 @@ function show_food_contents() {
   $("#hide_food_button").show();
   $("#update_food_button").show();
   $("#food_contents").show();
-  $("#food-chart").show();
+  $("div#food.chart div").show();
 }
 
 function load_ingredient(from) {
@@ -422,7 +422,6 @@ $(function() {
   if (!("id" in document.createElement("datalist")))
     alert("Attention!\nUnfortunatelly your browser is not good\nenough for this site. You should use a\nbrowser that supports HTML5 datalist tags.\n For example: Chrome,\nFirefox, or Opera.");
   $("#food_contents").hide();
-  $("#food_chart").hide();
   $("#show_food_button").show();
   $("#hide_food_button").hide();
   $("#update_food_button").hide();
@@ -583,7 +582,7 @@ function show_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").show();
   $("#" + product_id + ".update_product_contents_button").show();
   $("#" + product_id + ".product_contents").show();
-  $("#" + product_id + "-chart").show();
+  $("div#" + product_id + ".chart div").show();
 }
 
 function hide_product_contents(product_id) {
@@ -591,11 +590,11 @@ function hide_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").hide();
   $("#" + product_id + ".update_product_contents_button").hide();
   $("#" + product_id + ".product_contents").hide();
-  $("#" + product_id + "-chart").hide();
+  $("div#" + product_id + ".chart div").hide();
 }
 
 function update_product_chart(product_id, xAxis_categories, series_data) {
-  $("#"+product_id+"-chart").highcharts({
+  $("div#"+product_id+".chart").highcharts({
     chart: {
       backgroundColor: "#FAFAD2",
       type: "bar",
@@ -704,7 +703,7 @@ function show_plan_contents() {
   $(".hide_plan_contents_button").show();
   $(".update_plan_contents_button").show();
   $("#plan_contents").show();
-  $("#plan_chart").show();
+  $("div#plan.chart div").show();
 }
 
 function hide_plan_contents() {
@@ -712,11 +711,11 @@ function hide_plan_contents() {
   $(".hide_plan_contents_button").hide();
   $(".update_plan_contents_button").hide();
   $("#plan_contents").hide();
-  $("#plan_chart").hide();
+  $("div#plan.chart div").hide();
 }
 
 function update_plan_chart(xAxis_categories, series_data) {
-  $("#plan-chart").highcharts({
+  $("div#plan.chart").highcharts({
     chart: {
       backgroundColor: "#FAFAD2",
       type: "bar",
@@ -1148,7 +1147,7 @@ function badge() {
   <datalist id="food_names"></datalist>
   <select id="food_descriptions" onchange="select_food_description()"></select>
 
-  <div id="food-chart" class="chart"></div>
+  <div id="food" class="chart"></div>
   <div class="contents">
     <button id="show_food_button" type="button" onclick="show_food_contents()">Show</button>
     <button id="hide_food_button" type="button" onclick="hide_food_contents()">Hide</button>
@@ -1237,7 +1236,7 @@ function badge() {
         <tbody class="ingredients" id="$product_id">
         </tbody>
       </table>
-      <div id="$product_id-chart" class="chart"></div>
+      <div id="$product_id" class="chart"></div>
       <div class="contents_pv">
         <button class="show_product_contents_button" id="$product_id" type="button"
                 onclick="show_product_contents('$product_id')">Show</button>
@@ -1337,7 +1336,7 @@ function badge() {
   </div>
 
   <h3>Plan Contents</h3>
-  <div id="plan-chart" class="chart"></div>
+  <div id="plan" class="chart"></div>
   <div class="contents_pv">
     <button class="show_plan_contents_button" type="button"
             onclick="show_plan_contents()">Show</button>

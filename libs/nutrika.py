@@ -282,6 +282,8 @@ class ProductNutrients(object):
         self.ingredients = product['ingredients'].values()
         self.price = float(product['price'])
         self.keys = [ingredient['ndbno'] for ingredient in self.ingredients]
+        self.amounts = {ingredient['ndbno']:ingredient['amount'] 
+                        for ingredient in self.ingredients}
     def get_amount(self, nutr_no):
         """returns (applicable, amount)"""
         applicable = False
@@ -297,7 +299,7 @@ class ProductNutrients(object):
             amount += nutrient_amount
         return (applicable, amount, details)
     def get_name(self, key):
-        return food_dict[key][1]
+        return self.amounts[key] + 'g ' + food_dict[key][1]
 
 def get_product_contents(lsg, age, weight, product):
     """
@@ -319,10 +321,14 @@ class PlanNutrients(object):
         self.plan = plan
         self.price = 0
         self.keys = []
+        self.quantities = {}
         for product in self.plan['products']:
             print('product:', product)
-            self.price += float(product['price']) * float(product['quantity'])
-            self.keys.append(product['name'])
+            quantity = product['quantity']
+            name = product['name']
+            self.price += float(product['price']) * float(quantity)
+            self.keys.append(name)
+            self.quantities[name] = quantity
     def get_amount(self, nutr_no):
         """returns (applicable, amount)"""
         applicable = False
@@ -341,7 +347,7 @@ class PlanNutrients(object):
             details[product['name']] = product_amount
         return (applicable, amount, details)
     def get_name(self, key):
-        return key
+        return self.quantities[key] + ' ' + key
 
 def get_plan_contents(lsg, age, weight, plan):
     """
