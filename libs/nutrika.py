@@ -49,7 +49,7 @@ def load_food_groups(data_dir):
             foodgroup_list.append(tuple(a))
             foodgroup_dict[a[0]] = a[1]
             food_list_per_group[a[0]] = []
-    foodgroup_dict['version'] = "2"
+    foodgroup_dict['version'] = "3"
 
 def load_food_desc(data_dir):
     fn = os.path.join(data_dir, 'food_desc.xz')
@@ -75,7 +75,7 @@ def load_nutr_def(data_dir):
     nutrient_links["Vitamins"] = '<a href="http://en.wikipedia.org/wiki/Vitamins">Vitamins</a>'
     nutrient_links["Lipids"] = '<a href="http://en.wikipedia.org/wiki/Lipid">Lipids</a>'
     nutrient_links["Amino Acids"] = '<a href="http://en.wikipedia.org/wiki/Amino_acid">Amino Acids</a>'
-    nutrient_links["version"] = '2'
+    nutrient_links["version"] = '3'
 
 
 def load_nutr_data(data_dir):

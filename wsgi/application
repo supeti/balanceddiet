@@ -87,7 +87,7 @@ calculator_refs = {
     'nutrient_links': ReferenceData(nutrika.nutrient_links, True),
     'foodgroups': ReferenceData(nutrika.foodgroup_dict, True),
     'foods': ReferenceData({'foods' : nutrika.food_list,
-                            'version' : '2'}, True),
+                            'version' : '3'}, True),
     'badge_class': ReferenceData(bde.badge_class),
     'issuer': ReferenceData(bde.issuer),
     'revoked': ReferenceData(bde.revoked),
