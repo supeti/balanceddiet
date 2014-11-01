@@ -6,9 +6,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <link rel="shortcut icon" href="/static/Nutrika-16.png" type="image/png">
     <link rel="stylesheet" type="text/css" href="/static/Nutrika.css">
-    <link rel='stylesheet' type='text/css' href='http://fonts.googleapis.com/css?family=Berkshire+Swash|Tienne:700|Istok+Web:400,400italic,700,700italic'>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Berkshire+Swash|Tienne:700|Istok+Web:400,400italic,700,700italic">
     <script src="https://apis.google.com/js/client.js?onload=load"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
     <script src="https://login.persona.org/include.js"></script>
     <script src="https://backpack.openbadges.org/issuer.js"></script>
 <script>
@@ -210,7 +212,7 @@ function restore_food_list() {
 }
 
 function build_food_list(foods) {
-  datalist_support = 'id' in document.createElement('datalist');
+  datalist_support = "id" in document.createElement("datalist");
   $.each(foods, function(i, item) {
     var ndb_no = item[0];
     var group = item[1];
@@ -238,6 +240,43 @@ function get_foods() {
   });
 }
 
+function update_food_chart(subtitle_text, xAxis_categories, series_data) {
+  $("#food.chart").highcharts({
+    chart: {
+      backgroundColor: "#FAFAD2",
+      type: "bar",
+      height: 100 + series_data.length * 30
+    },
+    legend: {
+      enabled: false
+    },
+    series: [{
+      name: "value per RDA|AI",
+      data: series_data
+    }],
+    subtitle: {
+      text: subtitle_text,
+    },
+    title: {
+      text: "Nutrient Contents of",
+    },
+    tooltip: {
+      formatter: function () { return this.y + "%" }
+    },
+    xAxis: {
+      categories: xAxis_categories
+    },
+    yAxis: {
+      labels: {
+        formatter: function () { return this.value + "%" }
+      },
+      title: {
+        text: "volume (RDA% or AI%)"
+      }
+    }
+  });
+}
+
 var receive_food_contents = function(data) {
   var contents = $("#food_contents");
   contents.html("");
@@ -247,6 +286,8 @@ var receive_food_contents = function(data) {
   contents.append(caption_tmpl.replace("$description", description));
   var head_tmpl = $("#contents_head_template").html();
   var body_tmpl = $("#contents_body_template").html();
+  var categories = Array();
+  var series = Array();
   $.each(data.contents, function(i, item) {
     if ($("#" + item.title.replace(" ", "") + ".appearance").is(":checked")) {
       if (item.title in nutrient_links) {
@@ -268,11 +309,20 @@ var receive_food_contents = function(data) {
           row = row.replace("$ear", item.ear).replace("$rda", item.rda);
           row = row.replace("$ai", item.ai).replace("$ul", item.ul);
           body += row;
+          if (item.rda) {
+            categories.push(item.desc);
+            series.push(parseFloat(item.rda.replace('%','')));
+          }
+          if (item.ai) {
+            categories.push(item.desc);
+            series.push(parseFloat(item.ai.replace('%','')));
+          }
         }
       });
       contents.append(body + "</tbody>");
     }
   });
+  update_food_chart("100g " + description, categories, series);
 };
 
 function update_food_contents() {
@@ -291,6 +341,7 @@ function update_food_contents() {
 
 function hide_food_contents() {
   $("#food_contents").hide();
+  $("div#food.chart div").hide();
   $("#show_food_button").show();
   $("#hide_food_button").hide();
   $("#update_food_button").hide();
@@ -302,6 +353,7 @@ function show_food_contents() {
   $("#hide_food_button").show();
   $("#update_food_button").show();
   $("#food_contents").show();
+  $("div#food.chart div").show();
 }
 
 function load_ingredient(from) {
@@ -364,11 +416,11 @@ function restore_settings() {
   $("#Lipids.appearance").prop("checked", "true"==localStorage.lipids);
   $("#AminoAcids.appearance").prop("checked", "true"==localStorage.aminoacids);
   $("#Others.appearance").prop("checked", "true"==localStorage.others);
-  $('#NA.appearance').prop('checked', "true"==localStorage.na);
+  $("#NA.appearance").prop("checked", "true"==localStorage.na);
 }
 
 $(function() {
-  if (!('id' in document.createElement('datalist')))
+  if (!("id" in document.createElement("datalist")))
     alert("Attention!\nUnfortunatelly your browser is not good\nenough for this site. You should use a\nbrowser that supports HTML5 datalist tags.\n For example: Chrome,\nFirefox, or Opera.");
   $("#food_contents").hide();
   $("#show_food_button").show();
@@ -379,13 +431,13 @@ $(function() {
   if(typeof(Storage) !== "undefined") {
     if ("off" == localStorage.help) {
       helpOff();
-      $("#help_off").attr('checked', true);
+      $("#help_off").attr("checked", true);
     } else if ("tutorial" == localStorage.help) {
       helpTutorial();
-      $("#help_tutorial").attr('checked', true);
+      $("#help_tutorial").attr("checked", true);
     } else {
       helpOn();
-      $("#help_on").attr('checked', true);
+      $("#help_on").attr("checked", true);
     }
     if ("set" == localStorage.settings) {
       restore_settings();
@@ -531,6 +583,7 @@ function show_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").show();
   $("#" + product_id + ".update_product_contents_button").show();
   $("#" + product_id + ".product_contents").show();
+  $("div#" + product_id + ".chart div").show();
 }
 
 function hide_product_contents(product_id) {
@@ -538,6 +591,47 @@ function hide_product_contents(product_id) {
   $("#" + product_id + ".hide_product_contents_button").hide();
   $("#" + product_id + ".update_product_contents_button").hide();
   $("#" + product_id + ".product_contents").hide();
+  $("div#" + product_id + ".chart div").hide();
+}
+
+function update_product_chart(product_id, xAxis_categories, series_data) {
+  $("div#"+product_id+".chart").highcharts({
+    chart: {
+      backgroundColor: "#FAFAD2",
+      type: "bar",
+      height: 100 + xAxis_categories.length * 30
+    },
+    plotOptions: {
+      series: {
+        stacking: 'normal'
+      }
+    },
+    series: series_data,
+    subtitle: {
+      text: plan.products[product_id].name
+    },
+    title: {
+      text: "Nutrient Contents of"
+    },
+    tooltip: {
+      formatter: function () {
+        return "<b>" + this.x + "</b><br/>" +
+               this.series.name + ": " + parseFloat(this.y).toFixed(2) + "%" + "<br/>" +
+               "<b>Total: " + parseFloat(this.total).toFixed(2) + "%</b>"
+      }
+    },
+    xAxis: {
+      categories: xAxis_categories
+    },
+    yAxis: {
+      labels: {
+        formatter: function () { return this.value + "%" }
+      },
+      title: {
+        text: "volume (RDA% or AI%)"
+      }
+    }
+  });
 }
 
 var receive_product_contents = function(data) {
@@ -573,6 +667,7 @@ var receive_product_contents = function(data) {
     }
   });
   product_contents.show();
+  update_product_chart(data.product_id, data.categories, data.series);
 };
 
 function update_product_contents(product_id) {
@@ -609,6 +704,7 @@ function show_plan_contents() {
   $(".hide_plan_contents_button").show();
   $(".update_plan_contents_button").show();
   $("#plan_contents").show();
+  $("div#plan.chart div").show();
 }
 
 function hide_plan_contents() {
@@ -616,6 +712,44 @@ function hide_plan_contents() {
   $(".hide_plan_contents_button").hide();
   $(".update_plan_contents_button").hide();
   $("#plan_contents").hide();
+  $("div#plan.chart div").hide();
+}
+
+function update_plan_chart(xAxis_categories, series_data) {
+  $("div#plan.chart").highcharts({
+    chart: {
+      backgroundColor: "#FAFAD2",
+      type: "bar",
+      height: 100 + xAxis_categories.length * 30
+    },
+    plotOptions: {
+      series: {
+        stacking: 'normal'
+      }
+    },
+    series: series_data,
+    title: {
+      text: "Nutrient Contents of the Plan"
+    },
+    tooltip: {
+      formatter: function () {
+        return "<b>" + this.x + "</b><br/>" +
+               this.series.name + ": " + parseFloat(this.y).toFixed(2) + "%" + "<br/>" +
+               "<b>Total: " + parseFloat(this.total).toFixed(2) + "%</b>"
+      }
+    },
+    xAxis: {
+      categories: xAxis_categories
+    },
+    yAxis: {
+      labels: {
+        formatter: function () { return this.value + "%" }
+      },
+      title: {
+        text: "volume (RDA% or AI%)"
+      }
+    }
+  });
 }
 
 var plan_bpv;
@@ -655,6 +789,7 @@ var receive_plan_contents = function(data) {
     }
   });
   plan_contents.show();
+  update_plan_chart(data.categories, data.series);
 };
 
 function get_plan_input(submit) {
@@ -665,7 +800,8 @@ function get_plan_input(submit) {
   $($("#product_list input.selected_product")).each(function() {
     var product_id = $(this).val();
     var product = new Object();
-    if (submit) product.name = $("#" + product_id + ".product_name").val();
+    /* if (submit) */
+    product.name = $("#" + product_id + ".product_name").val();
     product.price = $("#" + product_id + ".product_price").val();
     product.quantity = $("#" + product_id + ".quantity").val();
     product.ingredients = new Array();
@@ -722,11 +858,11 @@ function import_plan() {
 
 var user = new Object();
 function signinCallback(authResult) {
-  gapi.client.load('plus','v1', function(){
-    if (authResult['access_token']) {
-      user.access_token = authResult['access_token'];
-      $('#login').hide();
-      gapi.client.plus.people.get({'userId' : 'me'}).execute(function(resp) {
+  gapi.client.load("plus","v1", function(){
+    if (authResult["access_token"]) {
+      user.access_token = authResult["access_token"];
+      $("#login").hide();
+      gapi.client.plus.people.get({"userId" : "me"}).execute(function(resp) {
         user.image = resp.image.url;
         user.url = resp.url;
         user.displayName = resp.displayName;
@@ -736,18 +872,18 @@ function signinCallback(authResult) {
           text += "<img src='" + resp.image.url + "'>";
         }
         text += resp.displayName + "</a>";
-        $('#cooklink').html(text);
+        $("#cooklink").html(text);
       });
       $("#profile").show();
-    } else if (authResult['error']) {
-      alert('Sign-in state: ' + authResult['error']);
+    } else if (authResult["error"]) {
+      alert("Sign-in state: " + authResult["error"]);
     }
   });
 }
 
 var return_submit = function(data) {
   if ("success" == data.result) {
-    window.location.assign('contest/my_plans');
+    window.location.assign("contest/my_plans");
   } else {
     alert("Error!\n" + data.response);
   }
@@ -1012,6 +1148,7 @@ function badge() {
   <datalist id="food_names"></datalist>
   <select id="food_descriptions" onchange="select_food_description()"></select>
 
+  <div id="food" class="chart"></div>
   <div class="contents">
     <button id="show_food_button" type="button" onclick="show_food_contents()">Show</button>
     <button id="hide_food_button" type="button" onclick="hide_food_contents()">Hide</button>
@@ -1054,7 +1191,6 @@ function badge() {
       </tr>
     </tbody>
   </table>
-
 
 
   <h2>Products
@@ -1101,6 +1237,7 @@ function badge() {
         <tbody class="ingredients" id="$product_id">
         </tbody>
       </table>
+      <div id="$product_id" class="chart"></div>
       <div class="contents_pv">
         <button class="show_product_contents_button" id="$product_id" type="button"
                 onclick="show_product_contents('$product_id')">Show</button>
@@ -1200,6 +1337,7 @@ function badge() {
   </div>
 
   <h3>Plan Contents</h3>
+  <div id="plan" class="chart"></div>
   <div class="contents_pv">
     <button class="show_plan_contents_button" type="button"
             onclick="show_plan_contents()">Show</button>
