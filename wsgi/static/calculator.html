@@ -392,17 +392,17 @@ $(function() {
     } else {
       store_settings();
     }
-    if ("2" == localStorage.nutrient_links_ver) {
+    if ("3" == localStorage.nutrient_links_ver) {
         nutrient_links = JSON.parse(localStorage.nutrient_links);
     } else {
         get_nutrient_links();
     }
-    if ("2" == localStorage.foodgroups_ver) {
+    if ("3" == localStorage.foodgroups_ver) {
         foodgroups = JSON.parse(localStorage.foodgroups);
     } else {
         get_foodgroups();
     }
-    if ("2" == localStorage.foods_ver) {
+    if ("3" == localStorage.foods_ver) {
         restore_food_list();
     } else {
         get_foods();
