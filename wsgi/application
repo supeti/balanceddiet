@@ -51,7 +51,6 @@ static_objects = {
     'Cherry-48.png': Static('Cherry-48.png', 'image/png', False),
     'Cherry-512.png': Static('Cherry-512.png', 'image/png', False),
     'contest.html': Static('contest.html', 'text/html; charset=UTF-8'),
-    'mobile.html': Static('mobile.html', 'text/html; charset=UTF-8'),
     'my_plans.html': Static('my_plans.html', 'text/html; charset=UTF-8'),
     'received.html': Static('received.html', 'text/html; charset=UTF-8'),
     'Nutrika.css': Static('Nutrika.css', 'text/css'),
@@ -229,17 +228,10 @@ def calculator_app(environ, start_response, path_info):
         start_response('200 OK', ref.header)
         return ref.response
     elif not path_info[1]:
-        print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
-        if 'iPad' in environ['HTTP_USER_AGENT']:
-            static = static_objects['mobile.html']
-        else:
-            static = static_objects['master.html']
+        #print('HTTP_USER_AGENT' + '=' + environ['HTTP_USER_AGENT'])
+        static = static_objects['master.html']
         start_response('200 OK', static.header)
         return static.response
-    #elif path_info[1] == 'mobile':
-    #    static = static_objects['mobile.html']
-    #    start_response('200 OK', static.header)
-    #    return static.response
     elif path_info[1] == 'badges':
         response_body = bde.get_badge(path_info[2])
         ctype = 'application/json; charset=UTF-8'
