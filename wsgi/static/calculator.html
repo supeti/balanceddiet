@@ -170,19 +170,14 @@ function change_setting_checkbox(checkboxid, lskey) {
   localStorage[lskey] = $(checkboxid).is(":checked");
 }
 
-function select_food_description() {
-  localStorage.ndbno = $("#food_descriptions").val();
-  $("#ndbno").val(localStorage.ndbno);
-}
-
 function select_NDBNo() {
   localStorage.ndbno = $("#ndbno").val();
-  $("#food_descriptions").val(localStorage.ndbno);
+  $("#food_description").text(food_name_map[localStorage.ndbno]);
 }
 
 function restore_food_info() {
   $("#ndbno").val(localStorage.ndbno);
-  $("#food_descriptions").val(localStorage.ndbno);
+  $("#food_description").text(food_name_map[localStorage.ndbno]);
 }
 
 var nutrient_links;
@@ -207,7 +202,6 @@ var food_name_map = new Object();
 
 function restore_food_list() {
   $("#food_names").html(localStorage.food_names);
-  $("#food_descriptions").html(localStorage.food_descriptions);
   food_name_map = JSON.parse(localStorage.food_name_map);
 }
 
@@ -223,14 +217,11 @@ function build_food_list(foods) {
     var option = "<option value='" + ndb_no + "'>" + food_desc + "</option>";
     if (optgroup.is("optgroup")) {
       optgroup.append(option);
-    } else {
-      $("#food_descriptions").append("<optgroup class='group' id='" + group + "' label='" + foodgroups[group] + "'>" + option + "</optgroup>");
     }
     food_name_map[ndb_no] = food_desc;
   });
   localStorage.food_name_map = JSON.stringify(food_name_map);
   localStorage.food_names = $("#food_names").html();
-  localStorage.food_descriptions = $("#food_descriptions").html();
 }
 
 function get_foods() {
@@ -282,7 +273,7 @@ var receive_food_contents = function(data) {
   contents.html("");
   var head="", body="", title="";
   var caption_tmpl = $("#contents_caption_template").html();
-  var description = $("#food_descriptions>optgroup>option:selected").text();
+  var description = $("#food_description").text();
   contents.append(caption_tmpl.replace("$description", description));
   var head_tmpl = $("#contents_head_template").html();
   var body_tmpl = $("#contents_body_template").html();
@@ -800,7 +791,6 @@ function get_plan_input(submit) {
   $($("#product_list input.selected_product")).each(function() {
     var product_id = $(this).val();
     var product = new Object();
-    /* if (submit) */
     product.name = $("#" + product_id + ".product_name").val();
     product.price = $("#" + product_id + ".product_price").val();
     product.quantity = $("#" + product_id + ".quantity").val();
@@ -1141,12 +1131,25 @@ function badge() {
 
   <h2>Food Contents</h2>
   <p class="help">Here, you can query nutrient contents of various food items by the USDA NDB number, or by choosing from the list.</p>
-  <p class="tutorial">Type an NDB number (for example <em>09040</em>) in the text input line below. Press <mark>Show</mark> below, and watch the nutrient contents appearing. In smart browsers like <a href="http://www.mozilla.org/firefox">Firefox</a>, you may also type a part of the description (for example <em>bananas</em>), and choose from a filtered dropdown list. In other, less smart browsers, you have to provide the NDB number, or choose from the very long unfiltered dropdown list to the right. The long list to the right works in most browsers. If you choose an other food item with either option, then you have to press <mark>Show</mark> or <mark>Update</mark> to see the current item in the contents box below.</p>
+  <p class="tutorial">Type an NDB number (for example <em>09040</em>) in the text input line below. Press <mark>Show</mark> below, and watch the nutrient contents appearing. In smart browsers, you may also type a part of the description (for example <em>bananas</em>), and choose from a filtered dropdown list. In other, less smart browsers, you have to provide the NDB number, or pick one from the very long unfiltered list here. If you choose an other food item with either option, then you have to press <mark>Show</mark> or <mark>Update</mark> to see the current item in the contents box below.</p>
 
-  <input list="food_names" id="ndbno" name="ndbno" size="50" oninput="select_NDBNo()"
-   title="Enter the NDBNo of USDA reference data (or in Firefox, just start typing a food name), and choose from the list.">
+  
   <datalist id="food_names"></datalist>
-  <select id="food_descriptions" onchange="select_food_description()"></select>
+  <table>
+    <thead>
+      <tr>
+        <th title="NDBNo. of the food item."><a href="static/ndb_list.html">NDBNo.</a></th>
+        <th title="Description of the food item.">Description</th>
+      </tr>
+    </thead>
+    <tbody class="ingredients" id="$product_id">
+      <tr>
+        <td><input list="food_names" id="ndbno" name="ndbno" size="50" oninput="select_NDBNo()"
+                   title="Enter the NDBNo of USDA reference data, or just start typing a food name, and choose from the list."></td>
+        <td class="food_description" id="food_description" title="Description of the food item."></td>
+      </tr>
+    </tbody>
+  </table>
 
   <div id="food" class="chart"></div>
   <div class="contents">
@@ -1230,7 +1233,7 @@ function badge() {
           <tr>
             <th title="Check the ones you want to delete.">
             <th title="Amount of food item in the product measured in grams.">Amount [g]
-            <th title="NDBNo. of the food item.">NDBNo.
+            <th title="NDBNo. of the food item."><a href="static/ndb_list.html">NDBNo.</a>
             <th title="Description of the food item.">Description
           </tr>
         </thead>
@@ -1259,7 +1262,7 @@ function badge() {
                    onchange="change_ingredient_amount($ingredient_id)">
         <td><input class="ndbno" id="$ingredient_id" list="food_names" name="ndbno" size="50"
                    oninput="update_ingredient('$ingredient_id')"
-                   title="Enter the NDBNo of USDA reference data (or in Firefox, just start typing a food name), and choose from the list.">
+                   title="Enter the NDBNo of USDA reference data, or just start typing a food name, and choose from the list.">
         <td class="ingdesc" id="$ingredient_id">
       </tr>
     </tbody>

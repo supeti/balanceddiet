@@ -47,6 +47,7 @@ class Static(object):
 static_objects = {
     'main.css': Static('main.css', 'text/css'),
     'main.html': Static('main.html', 'text/html; charset=UTF-8'),
+    'ndb_list.html': Static('ndb_list.html', 'text/html; charset=UTF-8'),
     'Cherry-16.png': Static('Cherry-16.png', 'image/png', False),
     'Cherry-48.png': Static('Cherry-48.png', 'image/png', False),
     'Cherry-512.png': Static('Cherry-512.png', 'image/png', False),
