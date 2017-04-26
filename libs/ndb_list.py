@@ -31,14 +31,19 @@ begin = '''<!DOCTYPE html>
 
 <body>
   <h1>List of Food Items</h1>
+  <h2>Table of Contents</h2>
 '''
+
+
 
 end = '</body>'
 
 with open('ndb_list.html', 'wt') as output:
     output.write(begin)
     for gid in sorted(groups.keys()):
-        output.write('  <h2>%s %s</h2>\n' % (gid, groups[gid]))
+        output.write('    <p><a href="#%s">%s %s</a></p>\n' % (gid, gid, groups[gid]))
+    for gid in sorted(groups.keys()):
+        output.write('  <h2 id="%s">%s %s</h2>\n' % (gid, gid, groups[gid]))
         for fid,fdesc in sorted(foods[gid]):
             output.write('    <p>%s %s</p>\n' % (fid , fdesc))
     output.write(end)
