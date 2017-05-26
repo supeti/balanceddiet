@@ -866,7 +866,8 @@ function signinCallback(authResult) {
       });
       $("#profile").show();
     } else if (authResult["error"]) {
-      alert("Sign-in state: " + authResult["error"]);
+      if (authResult["error"] != "immediate_failed")
+        alert("Sign-in state: " + authResult["error"]);
     }
   });
 }
