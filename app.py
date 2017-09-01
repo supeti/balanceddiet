@@ -11,9 +11,10 @@ import os.path
 #except IOError:
 #   pass
 
-for root, dirs, files in os.walk('/opt/app-root', topdown=False):
+for root, dirs, files in os.walk('/opt/app-root/src', topdown=False):
     for name in files:
         print(os.path.join(root, name))
+print('workdir:', os.getcwd())
 
 def run_simple_httpd_server(app, ip, port=8080):
    from wsgiref.simple_server import make_server
