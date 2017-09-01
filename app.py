@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 import imp
 import os
+import os.path
 
-try:
-   zvirtenv = os.path.join(os.environ['OPENSHIFT_PYTHON_DIR'],
-                           'virtenv', 'bin', 'activate_this.py')
-   exec(compile(open(zvirtenv).read(), zvirtenv, 'exec'),
-        dict(__file__ = zvirtenv) )
-except IOError:
-   pass
+#try:
+#   zvirtenv = os.path.join(os.environ['OPENSHIFT_PYTHON_DIR'],
+#                           'virtenv', 'bin', 'activate_this.py')
+#   exec(compile(open(zvirtenv).read(), zvirtenv, 'exec'),
+#        dict(__file__ = zvirtenv) )
+#except IOError:
+#   pass
+
+for root, dirs, files in os.walk('/opt/app-root', topdown=False):
+    for name in files:
+        print(os.path.join(root, name))
 
 def run_simple_httpd_server(app, ip, port=8080):
    from wsgiref.simple_server import make_server
@@ -23,11 +28,11 @@ def run_simple_httpd_server(app, ip, port=8080):
 #  main():
 #
 if __name__ == '__main__':
-   ip   = os.environ['OPENSHIFT_PYTHON_IP']
-   port = int(os.environ['OPENSHIFT_PYTHON_PORT'])
+   #ip   = os.environ['OPENSHIFT_PYTHON_IP']
+   #port = int(os.environ['OPENSHIFT_PYTHON_PORT'])
    zapp = imp.load_source('application', 'wsgi/application')
 
-   print('Starting WSGIServer on %s:%d ... ' % (ip, port))
-   run_simple_httpd_server(zapp.application, ip, port)
+   print('Starting WSGIServer on %s:%d ... ' % ('', 8080))
+   run_simple_httpd_server(zapp.application, '', 8080)
 
 
