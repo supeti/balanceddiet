@@ -17,7 +17,7 @@ if os.getenv("OPENSHIFT_REPO_DIR"):
     production_environment = True
     contest_url = 'http://balanceddiet-supeti.rhcloud.com/'
 else:
-    repo_dir = '/opt/app-root/src'
+    repo_dir = os.path.split(os.path.dirname(__file__))[0]
     site_data_dir = os.path.join(repo_dir, "site-data")
     data_dir = os.path.join(repo_dir, "data")
     production_environment = False
